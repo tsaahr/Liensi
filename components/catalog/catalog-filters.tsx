@@ -11,11 +11,35 @@ type CatalogFiltersProps = {
 };
 
 const sortOptions = [
-  { label: "Novidades", value: "newest" },
-  { label: "Menor preco", value: "price-asc" },
-  { label: "Maior preco", value: "price-desc" },
-  { label: "Promocoes primeiro", value: "promo" }
+  { label: "Mais recentes", value: "mais-recentes" },
+  { label: "Menor preço", value: "menor-preco" },
+  { label: "Maior preço", value: "maior-preco" },
+  { label: "Promoção", value: "promocoes" }
 ];
+
+function getVisibleSortValue(value?: string) {
+  if (value === "newest" || value === "mais-recentes") {
+    return "mais-recentes";
+  }
+
+  if (value === "price-asc" || value === "menor-preco") {
+    return "menor-preco";
+  }
+
+  if (value === "price-desc" || value === "maior-preco") {
+    return "maior-preco";
+  }
+
+  if (value === "promo" || value === "promocoes") {
+    return "promocoes";
+  }
+
+  return "mais-recentes";
+}
+
+function isGeneralCategory(category: Category) {
+  return category.slug === "geral" || category.name.trim().toLocaleLowerCase("pt-BR") === "geral";
+}
 
 export function CatalogFilters({
   categories,
@@ -24,7 +48,9 @@ export function CatalogFilters({
   sort = "newest",
   productCount
 }: CatalogFiltersProps) {
-  const hasFilters = Boolean(search || selectedCategory || sort !== "newest");
+  const visibleCategories = categories.filter((category) => !isGeneralCategory(category));
+  const visibleSort = getVisibleSortValue(sort);
+  const hasFilters = Boolean(search || selectedCategory || visibleSort !== "mais-recentes");
 
   return (
     <form
@@ -35,11 +61,8 @@ export function CatalogFilters({
       <div className="flex flex-col justify-between gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c084fc]">
-            Catalogo
+            Catálogo
           </p>
-          <h2 className="mt-3 max-w-2xl text-balance font-display text-4xl font-light text-white sm:text-5xl">
-            Escolha com calma.
-          </h2>
           <p className="mt-3 text-sm text-white/54">
             {productCount} produto{productCount === 1 ? "" : "s"} encontrado
             {productCount === 1 ? "" : "s"}.
@@ -48,24 +71,24 @@ export function CatalogFilters({
 
         <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-[minmax(220px,280px)_190px_190px_auto]">
           <label className="flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/42">
-            Buscar
+            Buscar produto
             <input
-              name="q"
+              name="busca"
               defaultValue={search}
-              placeholder="Nome do produto..."
+              placeholder="Digite o nome"
               className="h-11 rounded-md border border-white/10 bg-white/[0.06] px-4 text-sm font-normal normal-case tracking-normal text-white outline-none transition placeholder:text-white/42 focus:border-[#c084fc] focus:ring-2 focus:ring-[#c084fc]/25"
             />
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/42">
-            Categoria
+            Ver por categoria
             <select
-              name="category"
+              name="categoria"
               defaultValue={selectedCategory ?? ""}
               className="h-11 rounded-md border border-white/10 bg-[#11111a] px-4 text-sm font-normal normal-case tracking-normal text-white outline-none transition focus:border-[#c084fc] focus:ring-2 focus:ring-[#c084fc]/25"
             >
-              <option value="">Todas</option>
-              {categories.map((category) => (
+              <option value="">Todas as categorias</option>
+              {visibleCategories.map((category) => (
                 <option key={category.id} value={category.slug}>
                   {category.name}
                 </option>
@@ -74,10 +97,10 @@ export function CatalogFilters({
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/42">
-            Ordem
+            Organizar por
             <select
-              name="sort"
-              defaultValue={sort}
+              name="ordem"
+              defaultValue={visibleSort}
               className="h-11 rounded-md border border-white/10 bg-[#11111a] px-4 text-sm font-normal normal-case tracking-normal text-white outline-none transition focus:border-[#c084fc] focus:ring-2 focus:ring-[#c084fc]/25"
             >
               {sortOptions.map((option) => (
@@ -92,7 +115,7 @@ export function CatalogFilters({
             type="submit"
             className="h-11 self-end rounded-md bg-[#c084fc] px-5 text-sm font-semibold text-[#11091a] transition hover:bg-[#d8b4fe] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c084fc]/35"
           >
-            Filtrar
+            Aplicar filtros
           </button>
         </div>
       </div>

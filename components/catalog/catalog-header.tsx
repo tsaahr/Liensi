@@ -17,7 +17,7 @@ export function CatalogHeader() {
             className="transition hover:text-white focus-visible:outline-none focus-visible:text-[#d8b4fe]"
             href="/#catalogo"
           >
-            Catalogo
+            Catálogo
           </Link>
         </nav>
       </div>

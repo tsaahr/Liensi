@@ -91,7 +91,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               type="button"
               onClick={() => moveImage(1)}
               className="absolute right-3 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-md border border-white/14 bg-[#0a0a0f]/58 text-white backdrop-blur transition hover:border-[#c084fc] hover:text-[#d8b4fe] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c084fc]/35 sm:right-4"
-              aria-label="Proxima imagem"
+              aria-label="Próxima imagem"
             >
               <ChevronRight className="size-5" />
             </button>

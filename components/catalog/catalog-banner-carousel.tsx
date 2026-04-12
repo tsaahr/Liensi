@@ -169,7 +169,7 @@ export function CatalogBannerCarousel({ banners }: CatalogBannerCarouselProps) {
                 type="button"
                 onClick={() => moveBanner(1)}
                 className="flex size-10 items-center justify-center rounded-md border border-white/15 bg-[#0a0a0f]/54 text-white transition hover:border-[#c084fc] hover:text-[#d8b4fe]"
-                aria-label="Proximo banner"
+                aria-label="Próximo banner"
               >
                 <ChevronRight className="size-5" />
               </button>

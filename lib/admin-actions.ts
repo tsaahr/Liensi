@@ -69,6 +69,8 @@ const productVariantSchema = z.object({
 
 type CsvRecord = Record<string, string | undefined>;
 
+type CsvStockMode = "replace" | "add";
+
 type ProductVariantPayload = z.infer<typeof productVariantSchema>;
 
 type ProductImportPayload = {
@@ -91,6 +93,10 @@ const DEFAULT_LOW_STOCK_THRESHOLD = 3;
 
 function adminRedirect(path: string, type: "success" | "error", message: string): never {
   redirect(`${path}?${type}=${encodeURIComponent(message)}`);
+}
+
+function getCsvStockMode(formData: FormData): CsvStockMode {
+  return formData.get("stock_mode") === "add" ? "add" : "replace";
 }
 
 const headerAliases = {
@@ -991,6 +997,7 @@ export async function importProductsCsv(formData: FormData) {
   const admin = await requireAdmin();
 
   const file = formData.get("csv");
+  const stockMode = getCsvStockMode(formData);
 
   if (!(file instanceof File) || file.size === 0) {
     redirect("/admin/produtos/importar?error=Selecione um arquivo CSV.");
@@ -1065,7 +1072,13 @@ export async function importProductsCsv(formData: FormData) {
       let productId: string;
 
       if (existing?.id) {
-        const { error } = await supabase.from("products").update(payload).eq("id", existing.id);
+        const stockBefore = Number(existing.stock ?? 0);
+        const stockAfter = stockMode === "add" ? stockBefore + payload.stock : payload.stock;
+        const updatePayload = {
+          ...payload,
+          stock: stockAfter
+        };
+        const { error } = await supabase.from("products").update(updatePayload).eq("id", existing.id);
 
         if (error) {
           throw new Error(`Linha ${rowNumber}: erro ao atualizar produto (${error.message}).`);
@@ -1074,10 +1087,13 @@ export async function importProductsCsv(formData: FormData) {
         productId = existing.id as string;
         await recordStockMovement(supabase, {
           productId,
-          stockBefore: Number(existing.stock ?? payload.stock),
-          stockAfter: payload.stock,
+          stockBefore,
+          stockAfter,
           reason: "csv_import",
-          note: `Importacao CSV linha ${rowNumber}.`,
+          note:
+            stockMode === "add"
+              ? `Importacao CSV linha ${rowNumber}: somado ${payload.stock} ao estoque existente.`
+              : `Importacao CSV linha ${rowNumber}: estoque substituido pelo CSV.`,
           admin
         });
         updated += 1;
@@ -1124,7 +1140,8 @@ export async function importProductsCsv(formData: FormData) {
     updated: String(updated),
     categories: String(categoriesCreated),
     images: String(images),
-    defaults: String(defaultsApplied)
+    defaults: String(defaultsApplied),
+    stockMode
   });
 
   if (errors.length > 0) {
@@ -1235,31 +1252,65 @@ export async function deleteProduct(productId: string) {
 export async function updateImageOrder(productId: string, formData: FormData) {
   await requireAdmin();
 
-  const order = JSON.parse(String(formData.get("order") ?? "[]")) as string[];
+  const editPath = `/admin/produtos/${productId}/editar`;
+  let order: string[];
+
+  try {
+    const parsedOrder = JSON.parse(String(formData.get("order") ?? "[]"));
+    order = Array.isArray(parsedOrder) ? parsedOrder.map(String) : [];
+  } catch {
+    adminRedirect(editPath, "error", "Nao foi possivel ler a nova ordem das imagens.");
+  }
+
   const supabase = await createClient();
 
-  await Promise.all(
+  const updates = await Promise.all(
     order.map((id, display_order) =>
       supabase.from("product_images").update({ display_order }).eq("id", id).eq("product_id", productId)
     )
   );
+  const updateError = updates.find((result) => result.error)?.error;
 
-  const { data } = await supabase.from("products").select("slug").eq("id", productId).single();
+  if (updateError) {
+    adminRedirect(editPath, "error", `Nao foi possivel salvar a ordem: ${updateError.message}`);
+  }
+
+  const { data } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
   refreshCatalog([data?.slug ? `/produto/${data.slug}` : "/"]);
-  adminRedirect(`/admin/produtos/${productId}/editar`, "success", "Ordem das imagens salva.");
+  adminRedirect(editPath, "success", "Ordem das imagens salva.");
 }
 
 export async function setCoverImage(productId: string, imageId: string) {
   await requireAdmin();
 
+  const editPath = `/admin/produtos/${productId}/editar`;
   const supabase = await createClient();
+  const [{ data: image, error: imageError }, { data: product }] = await Promise.all([
+    supabase
+      .from("product_images")
+      .select("id")
+      .eq("product_id", productId)
+      .eq("id", imageId)
+      .maybeSingle(),
+    supabase.from("products").select("slug").eq("id", productId).maybeSingle()
+  ]);
+
+  if (imageError) {
+    adminRedirect(editPath, "error", `Nao foi possivel buscar a imagem: ${imageError.message}`);
+  }
+
+  if (!image) {
+    refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+    adminRedirect(editPath, "error", "Imagem nao encontrada. Atualize a pagina e tente novamente.");
+  }
+
   const { error: resetError } = await supabase
     .from("product_images")
     .update({ is_cover: false })
     .eq("product_id", productId);
 
   if (resetError) {
-    throw new Error(resetError.message);
+    adminRedirect(editPath, "error", `Nao foi possivel redefinir a capa: ${resetError.message}`);
   }
 
   const { error } = await supabase
@@ -1269,38 +1320,48 @@ export async function setCoverImage(productId: string, imageId: string) {
     .eq("id", imageId);
 
   if (error) {
-    throw new Error(error.message);
+    adminRedirect(editPath, "error", `Nao foi possivel definir a capa: ${error.message}`);
   }
 
-  const { data } = await supabase.from("products").select("slug").eq("id", productId).single();
-  refreshCatalog([data?.slug ? `/produto/${data.slug}` : "/"]);
-  adminRedirect(`/admin/produtos/${productId}/editar`, "success", "Imagem de capa atualizada.");
+  refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+  adminRedirect(editPath, "success", "Imagem de capa atualizada.");
 }
 
 export async function deleteProductImage(productId: string, imageId: string) {
   await requireAdmin();
 
+  const editPath = `/admin/produtos/${productId}/editar`;
   const supabase = await createClient();
-  const { data: image, error: imageError } = await supabase
-    .from("product_images")
-    .select("storage_path,is_cover")
-    .eq("product_id", productId)
-    .eq("id", imageId)
-    .single();
+  const [{ data: image, error: imageError }, { data: product }] = await Promise.all([
+    supabase
+      .from("product_images")
+      .select("storage_path,is_cover")
+      .eq("product_id", productId)
+      .eq("id", imageId)
+      .maybeSingle(),
+    supabase.from("products").select("slug").eq("id", productId).maybeSingle()
+  ]);
 
   if (imageError) {
-    throw new Error(imageError.message);
+    adminRedirect(editPath, "error", `Nao foi possivel buscar a imagem: ${imageError.message}`);
   }
 
-  await supabase.storage.from("produtos").remove([image.storage_path]);
+  if (!image) {
+    refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+    adminRedirect(editPath, "error", "Imagem nao encontrada. Atualize a pagina e tente novamente.");
+  }
 
-  const { error } = await supabase.from("product_images").delete().eq("id", imageId);
+  const { error } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("id", imageId)
+    .eq("product_id", productId);
   if (error) {
-    throw new Error(error.message);
+    adminRedirect(editPath, "error", `Nao foi possivel remover a imagem do produto: ${error.message}`);
   }
 
   if (image.is_cover) {
-    const { data: nextCover } = await supabase
+    const { data: nextCover, error: nextCoverError } = await supabase
       .from("product_images")
       .select("id")
       .eq("product_id", productId)
@@ -1308,14 +1369,48 @@ export async function deleteProductImage(productId: string, imageId: string) {
       .limit(1)
       .maybeSingle();
 
+    if (nextCoverError) {
+      await supabase.storage.from("produtos").remove([image.storage_path]);
+      refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+      adminRedirect(
+        editPath,
+        "error",
+        `Imagem removida, mas nao foi possivel buscar a proxima capa: ${nextCoverError.message}`
+      );
+    }
+
     if (nextCover) {
-      await supabase.from("product_images").update({ is_cover: true }).eq("id", nextCover.id);
+      const { error: coverError } = await supabase
+        .from("product_images")
+        .update({ is_cover: true })
+        .eq("id", nextCover.id)
+        .eq("product_id", productId);
+
+      if (coverError) {
+        await supabase.storage.from("produtos").remove([image.storage_path]);
+        refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+        adminRedirect(
+          editPath,
+          "error",
+          `Imagem removida, mas nao foi possivel definir a nova capa: ${coverError.message}`
+        );
+      }
     }
   }
 
-  const { data } = await supabase.from("products").select("slug").eq("id", productId).single();
-  refreshCatalog([data?.slug ? `/produto/${data.slug}` : "/"]);
-  adminRedirect(`/admin/produtos/${productId}/editar`, "success", "Imagem excluida com sucesso.");
+  const { error: storageError } = await supabase.storage.from("produtos").remove([image.storage_path]);
+
+  refreshCatalog([product?.slug ? `/produto/${product.slug}` : "/"]);
+
+  if (storageError) {
+    adminRedirect(
+      editPath,
+      "success",
+      "Imagem removida do produto. O arquivo no Storage pode precisar de limpeza manual."
+    );
+  }
+
+  adminRedirect(editPath, "success", "Imagem excluida com sucesso.");
 }
 
 export async function createBanner(formData: FormData) {

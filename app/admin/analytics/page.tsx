@@ -3,6 +3,10 @@ import type { ReactNode } from "react";
 import { BarChart3, Eye, MousePointerClick, Send, Users } from "lucide-react";
 
 import { AdminShell } from "@/components/admin/admin-shell";
+import {
+  RecentAnalyticsEvents,
+  type RecentAnalyticsEventItem
+} from "@/components/admin/recent-analytics-events";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +43,19 @@ function formatDate(value: string) {
     dateStyle: "short",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function getRecentAnalyticsEvents(
+  events: AdminAnalyticsSummary["recent_events"]
+): RecentAnalyticsEventItem[] {
+  return events.map((event) => ({
+    id: event.id,
+    title: analyticsEventLabels[event.event_type],
+    timestamp: formatDate(event.created_at),
+    detail: event.product_name
+      ? formatProductName(event.product_name)
+      : event.path ?? "Sem pagina registrada"
+  }));
 }
 
 function MetricCard({
@@ -86,6 +103,8 @@ function SetupNotice({ message }: { message: string }) {
 }
 
 function AnalyticsContent({ analytics }: { analytics: AdminAnalyticsSummary }) {
+  const recentEvents = getRecentAnalyticsEvents(analytics.recent_events);
+
   return (
     <>
       {analytics.limit_reached ? (
@@ -189,26 +208,7 @@ function AnalyticsContent({ analytics }: { analytics: AdminAnalyticsSummary }) {
             <CardDescription>Leitura rapida do que aconteceu mais recentemente.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {analytics.recent_events.map((event) => (
-              <div key={event.id} className="rounded-md border p-3 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium">{analyticsEventLabels[event.event_type]}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(event.created_at)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {event.product_name
-                    ? formatProductName(event.product_name)
-                    : event.path ?? "Sem pagina registrada"}
-                </p>
-              </div>
-            ))}
-            {analytics.recent_events.length === 0 ? (
-              <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Nenhum evento registrado ainda.
-              </p>
-            ) : null}
+            <RecentAnalyticsEvents events={recentEvents} />
           </CardContent>
         </Card>
       </div>

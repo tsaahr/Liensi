@@ -24,13 +24,29 @@ export const metadata: Metadata = {
     default: "Liensi",
     template: "%s | Liensi"
   },
-  description: "Catalogo intimo com curadoria sofisticada e atendimento direto pelo WhatsApp.",
+  description: "Catálogo íntimo com curadoria sofisticada e atendimento direto pelo WhatsApp.",
+  manifest: "/site.webmanifest",
   alternates: {
     canonical: "/"
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.ico"]
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Liensi",
+    statusBarStyle: "black-translucent"
+  },
   openGraph: {
     title: "Liensi",
-    description: "Catalogo intimo com curadoria sofisticada.",
+    description: "Catálogo íntimo com curadoria sofisticada.",
     url: "/",
     siteName: "Liensi",
     locale: "pt_BR",
@@ -47,7 +63,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Liensi",
-    description: "Catalogo intimo com curadoria sofisticada.",
+    description: "Catálogo íntimo com curadoria sofisticada.",
     images: ["/opengraph-image"]
   },
   robots: {

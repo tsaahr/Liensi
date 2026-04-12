@@ -32,13 +32,14 @@ export function ProductVariantPicker({
   const availableStock = usesVariants ? selectedVariant?.stock ?? 0 : fallbackStock;
   const whatsappProductName =
     usesVariants && selectedVariant ? `${productName} - ${selectedVariant.name}` : productName;
+  const stockText = (stock: number) => `${stock} ${stock === 1 ? "unidade" : "unidades"}`;
 
   return (
     <div className="flex flex-col gap-5">
       {usesVariants ? (
         <div className="border-y border-white/10 py-6">
           <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/42">
-            Variantes
+            Escolha uma opção
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {activeVariants.map((variant) => {
@@ -60,17 +61,10 @@ export function ProductVariantPicker({
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    {variant.color_hex ? (
-                      <span
-                        className="size-4 shrink-0 rounded-full border border-white/20"
-                        style={{ backgroundColor: variant.color_hex }}
-                        aria-hidden="true"
-                      />
-                    ) : null}
                     <span className="truncate">{variant.name}</span>
                   </span>
                   <span className="shrink-0 text-xs text-white/48">
-                    {outOfStock ? "Esgotado" : `${variant.stock} un.`}
+                    {outOfStock ? "Esgotado" : stockText(variant.stock)}
                   </span>
                 </button>
               );

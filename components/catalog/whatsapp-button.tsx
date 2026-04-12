@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo } from "react";
 
 import { WhatsAppIcon } from "@/components/icons/whatsapp-icon";
 import { trackAnalyticsEvent } from "@/lib/analytics-client";
@@ -14,25 +14,16 @@ type WhatsAppButtonProps = {
   disabled?: boolean;
 };
 
-const subscribeToNoopStore = () => () => {};
-const getServerProductUrl = () => "";
-const getCurrentProductUrl = () => (typeof window === "undefined" ? "" : window.location.href);
-
 export function WhatsAppButton({
   productId,
   productSlug,
   productName,
-  message = "Ola, quero falar com a Liensi.",
+  message = "Olá, quero falar com a Liensi.",
   disabled = false
 }: WhatsAppButtonProps) {
-  const productUrl = useSyncExternalStore(
-    subscribeToNoopStore,
-    getCurrentProductUrl,
-    getServerProductUrl
-  );
   const whatsappMessage = useMemo(
-    () => (productName ? getProductWhatsAppMessage(productName, productUrl) : message),
-    [message, productName, productUrl]
+    () => (productName ? getProductWhatsAppMessage(productName) : message),
+    [message, productName]
   );
   const hasNumber = Boolean(getWhatsAppNumber());
   const href = getWhatsAppHref(whatsappMessage);
@@ -52,8 +43,8 @@ export function WhatsAppButton({
         disabled
         className={className}
         style={style}
-        aria-label={disabled ? "Produto esgotado" : "WhatsApp indisponivel"}
-        title={disabled ? "Produto esgotado" : "WhatsApp indisponivel"}
+        aria-label={disabled ? "Produto esgotado" : "WhatsApp indisponível"}
+        title={disabled ? "Produto esgotado" : "WhatsApp indisponível"}
       >
         <WhatsAppIcon className={iconClassName} />
       </button>

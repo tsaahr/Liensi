@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -77,29 +77,29 @@ function SortableImage({ image, productId }: SortableImageProps) {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <form action={setCoverImage.bind(null, productId, image.id)}>
-          <SubmitButton
-            type="submit"
-            size="sm"
-            variant={image.is_cover ? "secondary" : "outline"}
-            pendingLabel="Salvando..."
-          >
-            <Star data-icon="inline-start" />
-            Capa
-          </SubmitButton>
-        </form>
-        <form action={deleteProductImage.bind(null, productId, image.id)}>
-          <SubmitButton
-            type="submit"
-            size="sm"
-            variant="destructive"
-            pendingLabel="Excluindo..."
-            confirmMessage="Excluir esta imagem do produto?"
-          >
-            <Trash2 data-icon="inline-start" />
-            Excluir
-          </SubmitButton>
-        </form>
+        <SubmitButton
+          type="submit"
+          size="sm"
+          variant={image.is_cover ? "secondary" : "outline"}
+          pendingLabel="Salvando..."
+          formAction={setCoverImage.bind(null, productId, image.id)}
+          formNoValidate
+        >
+          <Star data-icon="inline-start" />
+          Capa
+        </SubmitButton>
+        <SubmitButton
+          type="submit"
+          size="sm"
+          variant="destructive"
+          pendingLabel="Excluindo..."
+          confirmMessage="Excluir esta imagem do produto?"
+          formAction={deleteProductImage.bind(null, productId, image.id)}
+          formNoValidate
+        >
+          <Trash2 data-icon="inline-start" />
+          Excluir
+        </SubmitButton>
       </div>
     </li>
   );
@@ -115,6 +115,10 @@ export function ProductImageManager({ productId, images }: ProductImageManagerPr
     })
   );
   const action = updateImageOrder.bind(null, productId);
+
+  useEffect(() => {
+    setItems(sortedImages);
+  }, [sortedImages]);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -138,7 +142,12 @@ export function ProductImageManager({ productId, images }: ProductImageManagerPr
 
   return (
     <div className="flex flex-col gap-4">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        id={`product-images-${productId}`}
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <ul className="flex flex-col gap-3">
             {items.map((image) => (
@@ -147,12 +156,16 @@ export function ProductImageManager({ productId, images }: ProductImageManagerPr
           </ul>
         </SortableContext>
       </DndContext>
-      <form action={action}>
-        <input type="hidden" name="order" value={JSON.stringify(items.map((item) => item.id))} />
-        <SubmitButton type="submit" variant="outline" pendingLabel="Salvando...">
-          Salvar ordem
-        </SubmitButton>
-      </form>
+      <input type="hidden" name="order" value={JSON.stringify(items.map((item) => item.id))} />
+      <SubmitButton
+        type="submit"
+        variant="outline"
+        pendingLabel="Salvando..."
+        formAction={action}
+        formNoValidate
+      >
+        Salvar ordem
+      </SubmitButton>
     </div>
   );
 }

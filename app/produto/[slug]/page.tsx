@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { ProductViewTracker } from "@/components/analytics/product-view-tracker";
 import { CatalogHeader } from "@/components/catalog/catalog-header";
 import { Price } from "@/components/catalog/price";
+import { ProductDescription } from "@/components/catalog/product-description";
 import { ProductGallery } from "@/components/catalog/product-gallery";
 import { ProductVariantPicker } from "@/components/catalog/product-variant-picker";
 import { getProductBySlug, getProductSlugs } from "@/lib/catalog";
@@ -87,6 +89,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const usesVariants = productUsesVariants(product);
   const displayName = formatProductName(product.name);
   const pricing = getProductPricing(product);
+  const categoryName = product.category?.name?.trim() || "Curadoria Liensi";
+  const stockLabel = inStock
+    ? usesVariants
+      ? `${totalStock} ${totalStock === 1 ? "unidade disponível" : "unidades disponíveis"} no total`
+      : `${totalStock} ${totalStock === 1 ? "unidade disponível" : "unidades disponíveis"}`
+    : "Esgotado";
 
   return (
     <main className="catalog-shell pb-[calc(8rem+env(safe-area-inset-bottom))]">
@@ -96,33 +104,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
         productSlug={product.slug}
         productName={displayName}
       />
-      <section className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.58fr)] lg:px-8 lg:py-16">
-        <ProductGallery images={product.images} name={displayName} />
-        <div className="flex flex-col justify-center gap-8">
+      <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+        <Link
+          href="/#catalogo"
+          className="inline-flex h-11 items-center gap-3 rounded-md border border-white/10 bg-white/[0.05] px-4 text-xs font-semibold uppercase tracking-[0.22em] text-white/72 transition hover:-translate-x-0.5 hover:border-[#c084fc]/60 hover:bg-[#c084fc]/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c084fc]/45"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Voltar ao catálogo
+        </Link>
+      </div>
+      <section className="mx-auto grid w-full max-w-7xl items-start gap-10 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.86fr)_minmax(380px,0.64fr)] lg:px-8 lg:py-12">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <ProductGallery images={product.images} name={displayName} />
+        </div>
+        <div className="flex flex-col gap-8 lg:pt-2">
           <div className="animate-fade-up">
-            <Link
-              href="/#catalogo"
-              className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c084fc] transition hover:text-[#d8b4fe]"
-            >
-              Voltar ao catálogo
-            </Link>
-            <p className="mt-8 text-xs uppercase tracking-[0.26em] text-white/45">
-              {product.category?.name ?? "Sem categoria"}
+            <p className="text-xs uppercase tracking-[0.26em] text-white/45">
+              {categoryName}
             </p>
             <h1 className="mt-4 font-display text-6xl font-light leading-none text-white sm:text-7xl">
               {displayName}
             </h1>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <span className="rounded-md border border-white/10 bg-white/[0.06] px-3 py-1 text-sm text-white/75">
-                {inStock
-                  ? usesVariants
-                    ? `${totalStock} em estoque total`
-                    : `${totalStock} em estoque`
-                  : "Esgotado"}
+                {stockLabel}
               </span>
               {pricing.hasPromotion ? (
                 <span className="rounded-md bg-[#c084fc] px-3 py-1 text-sm font-semibold text-[#11091a]">
-                  {pricing.discountPercentage ? `${pricing.discountPercentage}% OFF` : "Promoção"}
+                  {pricing.discountPercentage
+                    ? `${pricing.discountPercentage}% de desconto`
+                    : "Promoção"}
                 </span>
               ) : null}
             </div>
@@ -134,15 +145,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             className="text-3xl font-semibold text-white"
           />
 
-          <div className="max-w-xl border-y border-white/10 py-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/42">
-              Detalhes
-            </p>
-            <p className="mt-4 whitespace-pre-line text-base leading-8 text-white/66">
-              {product.description ||
-                "Informacoes adicionais podem ser confirmadas diretamente no atendimento."}
-            </p>
-          </div>
+          <ProductDescription description={product.description} />
 
           <ProductVariantPicker
             productId={product.id}

@@ -41,7 +41,7 @@ export default function OpenGraphImage() {
             color: "rgba(248,244,255,0.72)"
           }}
         >
-          Catalogo intimo com curadoria sofisticada.
+          Catálogo íntimo com curadoria sofisticada.
         </div>
         <div
           style={{

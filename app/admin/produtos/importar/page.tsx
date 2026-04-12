@@ -19,6 +19,7 @@ type ImportProductsPageProps = {
     categories?: string;
     images?: string;
     defaults?: string;
+    stockMode?: string;
     notice?: string;
     errors?: string;
     error?: string;
@@ -67,6 +68,41 @@ export default async function ImportProductsPage({ searchParams }: ImportProduct
                 <Label htmlFor="csv">CSV de produtos</Label>
                 <Input id="csv" name="csv" type="file" accept=".csv,text/csv" required />
               </div>
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm font-medium">Como tratar o estoque?</p>
+                <div className="mt-3 grid gap-3">
+                  <label className="flex gap-3 rounded-md border bg-background p-3 text-sm">
+                    <input
+                      type="radio"
+                      name="stock_mode"
+                      value="replace"
+                      defaultChecked
+                      className="mt-0.5 size-4"
+                    />
+                    <span>
+                      <span className="block font-medium">Substituir estoque pelo CSV</span>
+                      <span className="text-muted-foreground">
+                        Mantem o comportamento atual. Se o CSV tiver 4, o produto fica com 4.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex gap-3 rounded-md border bg-background p-3 text-sm">
+                    <input
+                      type="radio"
+                      name="stock_mode"
+                      value="add"
+                      className="mt-0.5 size-4"
+                    />
+                    <span>
+                      <span className="block font-medium">Somar ao estoque atual</span>
+                      <span className="text-muted-foreground">
+                        Para produtos existentes, soma a quantidade do CSV ao estoque atual.
+                        Novos produtos entram com o estoque do CSV.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
               <SubmitButton type="submit" pendingLabel="Importando...">
                 Importar CSV
               </SubmitButton>
@@ -85,6 +121,12 @@ export default async function ImportProductsPage({ searchParams }: ImportProduct
                     <span>Categorias novas: {resolvedSearchParams.categories ?? "0"}</span>
                     <span>Imagens vinculadas: {resolvedSearchParams.images ?? "0"}</span>
                     <span>Ajustes automaticos: {resolvedSearchParams.defaults ?? "0"}</span>
+                    <span>
+                      Estoque:{" "}
+                      {resolvedSearchParams.stockMode === "add"
+                        ? "somado ao estoque atual"
+                        : "substituido pelo CSV"}
+                    </span>
                   </div>
                   {resolvedSearchParams.notice ? (
                     <p className="mt-4 rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">
@@ -133,6 +175,11 @@ export default async function ImportProductsPage({ searchParams }: ImportProduct
                 A importacao e tolerante: campos ausentes recebem padroes editaveis depois.
                 Produto sem preco entra inativo com preco <code>0</code>, evitando aparecer
                 no catalogo publico antes da revisao.
+              </p>
+              <p>
+                O estoque pode ser substituido pelo valor do CSV ou somado ao estoque atual.
+                Produtos com variantes usam o estoque das variantes no catalogo; o CSV altera
+                apenas o estoque geral/fallback.
               </p>
             </div>
 

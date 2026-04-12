@@ -94,8 +94,20 @@ function isMissingProductVariantsRelation(errorMessage: string) {
 }
 
 function normalizeProductSort(sort?: string): ProductSort {
-  if (sort === "price-asc" || sort === "price-desc" || sort === "promo") {
-    return sort;
+  if (sort === "price-asc" || sort === "menor-preco") {
+    return "price-asc";
+  }
+
+  if (sort === "price-desc" || sort === "maior-preco") {
+    return "price-desc";
+  }
+
+  if (sort === "promo" || sort === "promocoes") {
+    return "promo";
+  }
+
+  if (sort === "newest" || sort === "mais-recentes") {
+    return "newest";
   }
 
   return "newest";

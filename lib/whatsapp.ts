@@ -15,7 +15,6 @@ export function getWhatsAppHref(message: string) {
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
-export function getProductWhatsAppMessage(productName: string, productUrl?: string) {
-  const baseMessage = `Ola, tenho interesse no produto: ${productName}`;
-  return productUrl ? `${baseMessage} - ${productUrl}` : baseMessage;
+export function getProductWhatsAppMessage(productName: string) {
+  return `Olá, tenho interesse no ${productName}`;
 }

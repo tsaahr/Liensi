@@ -11,16 +11,27 @@ export const revalidate = 60;
 type HomeProps = {
   searchParams?: Promise<{
     q?: string;
+    busca?: string;
     category?: string;
+    categoria?: string;
     sort?: string;
+    ordem?: string;
   }>;
 };
 
+function normalizeCategoryFilter(value?: string) {
+  const category = value?.trim() ?? "";
+  return category.toLocaleLowerCase("pt-BR") === "geral" ? "" : category;
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const search = resolvedSearchParams.q?.trim() ?? "";
-  const category = resolvedSearchParams.category?.trim() ?? "";
-  const sort = resolvedSearchParams.sort?.trim() ?? "newest";
+  const search = (resolvedSearchParams.busca ?? resolvedSearchParams.q)?.trim() ?? "";
+  const category = normalizeCategoryFilter(
+    resolvedSearchParams.categoria ?? resolvedSearchParams.category
+  );
+  const sort = (resolvedSearchParams.ordem ?? resolvedSearchParams.sort)?.trim() ?? "mais-recentes";
+  const hasSortFilter = sort !== "mais-recentes" && sort !== "newest";
   const [banners, categories, products] = await Promise.all([
     getCatalogBanners(),
     getCategories(),
@@ -39,7 +50,7 @@ export default async function Home({ searchParams }: HomeProps) {
         productCount={products.length}
       />
       <CatalogViewTracker search={search} category={category} sort={sort} />
-      <ProductGrid products={products} hasFilters={Boolean(search || category || sort !== "newest")} />
+      <ProductGrid products={products} hasFilters={Boolean(search || category || hasSortFilter)} />
       <WhatsAppButton />
     </main>
   );

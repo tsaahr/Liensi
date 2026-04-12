@@ -12,7 +12,6 @@ type VariantDraft = {
   id: string;
   name: string;
   sku: string;
-  colorHex: string;
   stock: string;
   active: boolean;
   deleted: boolean;
@@ -32,7 +31,6 @@ function createEmptyVariant(): VariantDraft {
     id: "",
     name: "",
     sku: "",
-    colorHex: "",
     stock: "0",
     active: true,
     deleted: false
@@ -65,7 +63,6 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
         id: variant.id,
         name: variant.name,
         sku: variant.sku ?? "",
-        colorHex: variant.color_hex ?? "",
         stock: String(variant.stock),
         active: variant.active,
         deleted: false
@@ -132,7 +129,7 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
         <div>
           <h3 className="text-base font-semibold">Variantes e estoque</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Use para cor, tamanho ou outra opcao. Com variantes ativas, o estoque do
+            Use para tamanho, modelo, fragrancia ou outra opcao. Com variantes ativas, o estoque do
             catalogo vira a soma delas; sem variantes ativas, vale o estoque geral.
           </p>
         </div>
@@ -157,7 +154,6 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
                 <HiddenVariantFields row={row} order={order} />
                 <input type="hidden" name={`variant_name_${row.key}`} value={row.name} />
                 <input type="hidden" name={`variant_sku_${row.key}`} value={row.sku} />
-                <input type="hidden" name={`variant_color_hex_${row.key}`} value={row.colorHex} />
                 <input type="hidden" name={`variant_stock_${row.key}`} value={row.stock} />
               </div>
             );
@@ -171,7 +167,7 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
               {row.active ? (
                 <input type="hidden" name={`variant_active_${row.key}`} value="on" />
               ) : null}
-              <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_96px_116px]">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_116px]">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor={`variant_name_${row.key}`}>Nome da variante</Label>
                   <Input
@@ -179,7 +175,7 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
                     name={`variant_name_${row.key}`}
                     value={row.name}
                     onChange={(event) => updateVariant(row.key, { name: event.target.value })}
-                    placeholder="Preto, Rosa, P, M..."
+                    placeholder="P, M, 110V, 220V..."
                     required
                   />
                 </div>
@@ -191,16 +187,6 @@ export function ProductVariantsEditor({ variants }: ProductVariantsEditorProps) 
                     value={row.sku}
                     onChange={(event) => updateVariant(row.key, { sku: event.target.value })}
                     placeholder="codigo da variacao"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`variant_color_hex_${row.key}`}>Cor</Label>
-                  <Input
-                    id={`variant_color_hex_${row.key}`}
-                    name={`variant_color_hex_${row.key}`}
-                    value={row.colorHex}
-                    onChange={(event) => updateVariant(row.key, { colorHex: event.target.value })}
-                    placeholder="#c084fc"
                   />
                 </div>
                 <div className="flex flex-col gap-2">

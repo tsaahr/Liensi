@@ -19,6 +19,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
   const pricing = getProductPricing(product);
   const displayName = formatProductName(product.name);
   const totalStock = getProductStock(product);
+  const categoryName = product.category?.name?.trim() || "Curadoria Liensi";
 
   return (
     <TrackedProductLink
@@ -44,7 +45,9 @@ export function ProductCard({ product, index }: ProductCardProps) {
         <div className="absolute left-3 top-3 flex gap-2">
           {pricing.hasPromotion ? (
             <span className="rounded-md bg-[#c084fc] px-2.5 py-1 text-xs font-semibold text-[#11091a]">
-              {pricing.discountPercentage ? `${pricing.discountPercentage}% OFF` : "Promoção"}
+              {pricing.discountPercentage
+                ? `${pricing.discountPercentage}% de desconto`
+                : "Promoção"}
             </span>
           ) : null}
           {totalStock <= 0 ? (
@@ -54,7 +57,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
           ) : null}
           {productUsesVariants(product) ? (
             <span className="rounded-md border border-white/12 bg-[#0a0a0f]/72 px-2.5 py-1 text-xs font-semibold text-white/80">
-              Variantes
+              Opções
             </span>
           ) : null}
         </div>
@@ -62,7 +65,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
       <div className="flex min-h-40 flex-col justify-between gap-5 p-5">
         <div>
           <p className="truncate text-xs uppercase tracking-[0.24em] text-white/45">
-            {product.category?.name ?? "Sem categoria"}
+            {categoryName}
           </p>
           <h3 className="mt-2 line-clamp-2 min-h-[3.9rem] font-display text-3xl font-light leading-[0.96] text-pretty text-white">
             {displayName}

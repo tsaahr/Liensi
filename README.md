@@ -52,7 +52,7 @@ NEXT_PUBLIC_WHATSAPP_NUMBER=5511999999999
 
 O `NEXT_PUBLIC_SITE_URL` e usado para sitemap e URLs canonicas das paginas de produto. Em desenvolvimento pode usar `http://localhost:3000`.
 
-O `NEXT_PUBLIC_WHATSAPP_NUMBER` e usado para montar links `https://wa.me/...` no botao flutuante do catalogo. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia a mensagem com nome e URL da pagina. Depois de alterar esse valor com o servidor local aberto, reinicie `npm.cmd run dev`.
+O `NEXT_PUBLIC_WHATSAPP_NUMBER` e usado para montar links `https://wa.me/...` no botao flutuante do catalogo. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia apenas `Olá, tenho interesse no {nome do produto}`. Depois de alterar esse valor com o servidor local aberto, reinicie `npm.cmd run dev`.
 
 ## Rodando Localmente
 
@@ -92,6 +92,9 @@ Regras:
 - O importador e tolerante para CSVs incompletos.
 - `categoria` nunca e obrigatoria; quando faltar, sera criada/usada a categoria `Geral`.
 - `nome` e o unico campo realmente necessario. Se faltar, o importador tenta gerar com `sku`, `id` ou `inventory_id`.
+- Antes de importar, escolha o modo de estoque: `Substituir estoque pelo CSV` ou `Somar ao estoque atual`.
+- Em `Substituir`, produtos existentes ficam exatamente com o estoque do CSV.
+- Em `Somar`, produtos existentes recebem `estoque atual + estoque do CSV`; produtos novos entram com o estoque do CSV.
 - Se `preco` faltar ou vier invalido, o produto entra com preco `0` e fica inativo ate revisao.
 - Se `estoque` faltar ou vier invalido, o produto entra com estoque `0`.
 - `estoque_minimo` e opcional; quando vazio, usa `3` como limite de baixo estoque.
@@ -107,23 +110,26 @@ Regras:
 - Uploads manuais de produto aceitam JPG, PNG ou WebP ate 10 MB e sao convertidos para WebP no servidor.
 - Imagens principais do catalogo e da pagina de produto usam `next/image` com tamanhos estaveis e dominio do Supabase configurado em `next.config.mjs`.
 - A galeria usa `product_images.display_order` para ordenar imagens e `is_cover` para escolher a capa.
+- Na edicao admin, as acoes da galeria usam `formAction` nos botoes para funcionar dentro do formulario de produto sem criar `<form>` aninhado.
+- Ao excluir uma imagem no admin, o vinculo em `product_images` e removido, a lista da galeria sincroniza apos o refresh e uma nova capa e escolhida automaticamente quando a imagem excluida era a capa.
 - A pagina de produto exibe carrossel quando ha mais de uma imagem, com setas, contador, miniaturas e swipe no mobile.
 - A base de midia fica centralizada em `getProductMedia()`, com capa, lista ordenada, slides e flags de multiplas imagens.
 - Preco real fica em `products.price`; preco promocional opcional fica em `products.promotional_price`.
 - A logica de promocao fica centralizada em `getProductPricing()`: ela valida se a promocao e menor que o preco real, calcula o preco atual, o valor de desconto e o percentual de desconto.
 - O percentual de desconto aparece nos badges de promocao dos cards e da pagina de produto.
 - Campos manuais de preco aceitam formatos como `199,90` e `199.90`.
-- Produtos podem ter variantes opcionais em `product_variants`, como cor, tamanho ou outra opcao.
+- Produtos podem ter variantes opcionais em `product_variants`, como tamanho, voltagem, fragrancia ou outra opcao.
 - A pagina de produto mostra seletor de variantes quando existe pelo menos uma variante ativa.
-- Ao clicar no WhatsApp com uma variante selecionada, a mensagem inclui o nome da variante junto do produto.
+- Ao clicar no WhatsApp com uma variante selecionada, a mensagem inclui o nome da variante junto do produto, sem link da pagina.
 
 ## Estoque
 
 - Produtos possuem SKU/codigo interno opcional.
-- Variantes possuem nome, SKU opcional, cor opcional, estoque proprio, ordem e status ativo/inativo.
+- Variantes possuem nome, SKU opcional, estoque proprio, ordem e status ativo/inativo.
 - Quando um produto tem variantes ativas, o estoque exibido no catalogo e no admin e a soma do estoque dessas variantes.
 - Quando nao ha variantes ativas, o produto usa o estoque geral de `products.stock`.
 - A listagem admin nao faz ajuste inline de estoque para produtos com variantes; nesses casos o ajuste fica no formulario do produto, por variante.
+- A importacao CSV altera apenas o estoque geral/fallback do produto. Para produtos com variantes, ajuste o estoque de cada variante no formulario do produto.
 - Cada produto tem `low_stock_threshold`, usado para alertar baixo estoque no admin.
 - A listagem de produtos tem filtros para ativos, inativos, esgotados, baixo estoque e promocoes.
 - Alteracoes de estoque feitas pelo formulario do produto, variantes, listagem inline ou importacao CSV geram registros em `stock_movements`.
@@ -136,7 +142,7 @@ Regras:
 - O catalogo registra eventos anonimos de `catalog_view`, `product_card_click`, `product_view` e `whatsapp_click`.
 - Cada navegador recebe um `liensi_visitor_id` anonimo no `localStorage`; nao existe login de cliente.
 - A rota `/api/analytics/event` valida os eventos e grava em `analytics_events`.
-- A pagina `/admin/analytics` mostra visitantes unicos, eventos por tipo, produtos que mais levam ao WhatsApp, conversao card -> WhatsApp e eventos recentes.
+- A pagina `/admin/analytics` mostra visitantes unicos, eventos por tipo, produtos que mais levam ao WhatsApp, conversao card -> WhatsApp e eventos recentes com botao `Ver mais`.
 - A conversao e uma metrica de intencao: ela mede clique no WhatsApp, nao confirma envio de mensagem nem venda.
 - O app respeita `Do Not Track` quando o navegador envia `navigator.doNotTrack = "1"`.
 - O banco nao guarda IP bruto. O evento pode guardar path, referrer, user agent e metadados simples para leitura operacional.
@@ -160,18 +166,22 @@ Cada produto ativo ganha uma pagina publica em:
 /produto/slug-do-produto
 ```
 
-Os cards da home apontam para essa pagina, e a listagem admin mostra um botao `Ver pagina` para produtos ativos. A galeria da pagina individual funciona como carrossel quando o produto tem varias imagens. Quando o produto tem variantes ativas, a pagina mostra as opcoes antes do botao WhatsApp. O Next gera paginas estaticas para os slugs ativos com ISR de 60 segundos e tambem publica `/sitemap.xml` com uma URL por produto.
+Os cards da home apontam para essa pagina, e a listagem admin mostra um botao `Ver pagina` para produtos ativos. A pagina individual tem uma seta clara para voltar ao catalogo. A galeria funciona como carrossel quando o produto tem varias imagens e fica alinhada ao topo no desktop. Descricoes longas aparecem recolhidas com `Ver mais`/`Ver menos`. Quando o produto tem variantes ativas, a pagina mostra as opcoes antes do botao WhatsApp. O Next gera paginas estaticas para os slugs ativos com ISR de 60 segundos e tambem publica `/sitemap.xml` com uma URL por produto.
 
 As paginas de produto possuem metadata propria, Open Graph/Twitter card e fallback de detalhes quando a descricao ainda nao foi escrita.
 
 ## Vitrine e SEO
 
-- A home tem busca, filtro por categoria, ordenacao por novidades, menor preco, maior preco e promocoes primeiro.
+- A home tem busca, filtro por categoria, ordenacao por novidades, menor preco, maior preco e promocao.
+- A interface pública do catálogo usa rótulos em português claro: `Buscar produto`, `Ver por categoria`, `Organizar por`, `Mais recentes`, `Menor preço`, `Maior preço` e `Promoção`.
+- Os filtros públicos geram URLs legíveis com `busca`, `categoria` e `ordem`; links antigos com `q`, `category` e `sort` continuam funcionando.
+- A categoria interna `Geral` fica unificada em `Todas as categorias` na vitrine pública.
 - O catalogo mostra contador de produtos encontrados e estado vazio diferente para catalogo sem produtos ou filtros sem resultado.
 - Existem telas de loading/erro para produto e admin, alem de uma pagina 404 editorial.
 - `/opengraph-image` gera a imagem social padrao da marca.
 - `/robots.txt` permite o catalogo publico e bloqueia `/admin` e `/api`.
 - O botao do WhatsApp respeita `safe-area-inset-bottom` para nao colar na borda de celulares.
+- Os icones do app foram gerados a partir do `Liensi.png` atual: favicon da aba, `app/icon.png`, `app/apple-icon.png`, PNGs para atalhos Android e `public/site.webmanifest`.
 
 No desenvolvimento atual, o app esta rodando em `http://localhost:3002`; a porta `3000` pode estar ocupada por outro servico local. Use a porta exibida pelo `npm.cmd run dev`.
 
@@ -188,6 +198,7 @@ npm.cmd run start
 - O cliente final nao faz login. Ele apenas le o catalogo publico e chama o WhatsApp.
 - O admin mostra mensagens de sucesso/erro apos acoes comuns e usa botoes com estado de carregamento para evitar cliques duplicados.
 - Exclusoes de produto, categoria, banner e imagem pedem confirmacao antes de executar.
+- Se uma imagem ja tiver sido removida ou o arquivo do Storage nao puder ser apagado, o admin mostra uma mensagem amigavel em vez de derrubar a pagina de edicao.
 - O formulario de produto tem uma previa da vitrine com imagem, categoria, status, estoque e promocao antes de salvar.
 - O formulario de produto tambem permite editar SKU, limite de baixo estoque e variantes com estoque proprio, e mostra checklist de prontidao da vitrine.
 - A listagem e o painel admin destacam produtos incompletos, com filtro dedicado em `/admin/produtos?stock=incomplete`.
@@ -196,8 +207,9 @@ npm.cmd run start
 - O header publico nao mostra link para o admin; o acesso admin fica separado em `/admin`.
 - O admin tem um atalho `Catalogo` para abrir a vitrine publica.
 - O admin tem uma aba `Banners` para editar o carrossel do topo da vitrine.
-- O admin tem uma aba `Analytics` para acompanhar o funil anonimo ate o WhatsApp.
+- O admin tem uma aba `Analytics` para acompanhar o funil anonimo ate o WhatsApp; os ultimos eventos abrem em uma lista curta e podem ser expandidos com `Ver mais`.
 - O catalogo publico usa um botao fixo de WhatsApp no centro inferior da tela, sem fundo, exibindo apenas o icone em tamanho proporcional a viewport.
+- O favicon e os icones instalaveis usam o simbolo central recortado de `Liensi.png` para manter legibilidade em tamanhos pequenos. Ao trocar `Liensi.png`, regenere os derivados em `app/` e `public/`.
 - Nao ha cadastro publico no app.
 - O arquivo oficial para aplicar/evoluir o banco e `supabase.sql`.
 - Produtos inativos nao aparecem no catalogo publico.
