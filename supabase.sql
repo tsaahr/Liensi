@@ -4,8 +4,8 @@
 -- Important:
 -- 1. This SQL authorizes liensiparadise@gmail.com as an admin in public.admin_users.
 -- 2. If that Auth user already exists, this SQL confirms the email.
--- 3. If the Auth user does not exist yet, create it in Authentication > Users
---    or run scripts/create-admin.mjs with a service role key.
+-- 3. This file no longer sets a default password. Create the Auth user in
+--    Authentication > Users or run scripts/create-admin.mjs with a backend key.
 
 create extension if not exists pg_trgm;
 create extension if not exists citext;
@@ -349,10 +349,10 @@ set active = true,
 
 -- The account was created through Supabase Auth signup. This confirms the email
 -- when the SQL editor runs with owner privileges. If the Auth user does not
--- exist yet, this safely updates zero rows.
+-- exist yet, this safely updates zero rows. Password definition stays outside
+-- the repository for security.
 update auth.users
 set email_confirmed_at = coalesce(email_confirmed_at, now()),
-    encrypted_password = crypt('Liensi@123', gen_salt('bf')),
     updated_at = now()
 where lower(email) = lower('liensiparadise@gmail.com');
 

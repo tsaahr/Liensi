@@ -33,9 +33,9 @@ npm.cmd install
 
 3. Execute o SQL de `supabase.sql` no SQL editor do Supabase. O arquivo cria tabelas, indices, RLS e policies do bucket `produtos`, incluindo `product_variants`, `catalog_banners`, banners responsivos, campos de estoque profissional, `stock_movements` e `analytics_events`.
 
-4. O email `liensiparadise@gmail.com` ja esta autorizado como admin no `supabase.sql`. Se o usuario Auth ja existir e estiver pendente de confirmacao, o SQL confirma o email e define a senha `Liensi@123`.
+4. O email `liensiparadise@gmail.com` ja esta autorizado como admin no `supabase.sql`. Se o usuario Auth ja existir e estiver pendente de confirmacao, o SQL confirma o email. A senha nao fica mais definida no repositorio.
 
-5. Para criar ou recriar o usuario Auth por script, adicione `SUPABASE_SERVICE_ROLE_KEY` no `.env` e rode:
+5. Para criar ou recriar o usuario Auth por script, adicione `SUPABASE_SECRET_KEY` no `.env` (ou `SUPABASE_SERVICE_ROLE_KEY` legado) e rode:
 
 ```bash
 npm.cmd run create-admin -- liensiparadise@gmail.com sua-senha
@@ -45,14 +45,34 @@ npm.cmd run create-admin -- liensiparadise@gmail.com sua-senha
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica-ou-publishable
 NEXT_PUBLIC_SITE_URL=https://seudominio.com
 NEXT_PUBLIC_WHATSAPP_NUMBER=5511999999999
 ```
 
+Se voce ainda estiver usando a anon key legada do Supabase, pode usar `NEXT_PUBLIC_SUPABASE_ANON_KEY` como fallback. O projeto agora bloqueia o boot/build se uma chave secreta (`sb_secret_` ou `service_role`) aparecer em qualquer `NEXT_PUBLIC_*`.
+
 O `NEXT_PUBLIC_SITE_URL` e usado para sitemap e URLs canonicas das paginas de produto. Em desenvolvimento pode usar `http://localhost:3000`.
 
 O `NEXT_PUBLIC_WHATSAPP_NUMBER` e usado para montar links `https://wa.me/...` no botao flutuante do catalogo. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia apenas `Olá, tenho interesse no {nome do produto}`. Depois de alterar esse valor com o servidor local aberto, reinicie `npm.cmd run dev`.
+
+## Deploy na Vercel
+
+Ao publicar na Vercel, o arquivo `.env.local` do seu computador nao sobe junto. Voce precisa cadastrar as variaveis em `Project Settings > Environment Variables`:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+NEXT_PUBLIC_SITE_URL
+NEXT_PUBLIC_WHATSAPP_NUMBER
+```
+
+Notas importantes:
+
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e a chave publica do frontend. Nao use `sb_secret_` nem `service_role` aqui.
+- `SUPABASE_SECRET_KEY` e so para scripts locais/server-side, como `npm.cmd run create-admin`.
+- Depois de mudar env na Vercel, faca um novo deploy.
+- Se preferir manter a chave anon antiga, a Vercel tambem aceita `NEXT_PUBLIC_SUPABASE_ANON_KEY`, mas a publishable key e o caminho recomendado.
 
 ## Rodando Localmente
 
@@ -156,7 +176,7 @@ Regras:
 - Uploads de banner aceitam JPG, PNG ou WebP ate 10 MB e sao convertidos para WebP no servidor.
 - As imagens dos banners sao salvas no bucket publico `produtos`, nos caminhos `banners/desktop-{uuid}.webp` e `banners/mobile-{uuid}.webp`.
 - Quando nao houver imagem mobile, o catalogo usa a imagem desktop tambem no mobile.
-- Para habilitar essa funcionalidade no Supabase, reaplique `supabase.sql` ou `doc.sql`.
+- Para habilitar essa funcionalidade no Supabase, reaplique `supabase.sql`.
 
 ## Paginas de Produto
 
