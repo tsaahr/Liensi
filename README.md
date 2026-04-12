@@ -1,0 +1,210 @@
+# Liensi
+
+Catalogo publico para sex shop com curadoria editorial e atendimento direto pelo WhatsApp. O cliente navega pelos produtos, filtra por categoria, busca por nome e abre uma mensagem pronta no WhatsApp. Nao ha carrinho, pagamento ou login de cliente.
+
+O projeto tambem inclui uma area admin protegida por Supabase Auth para gerenciar produtos, variantes, categorias, estoque, imagens, banners, importacao CSV e analytics do funil ate o WhatsApp.
+
+O admin tambem tem uma tela inicial em `/admin` com resumo operacional: produtos ativos, esgotados, estoque baixo, promocoes, banners ativos e itens que precisam de atencao.
+
+A tela `/admin/analytics` mostra visitantes anonimos, cliques em produtos, visualizacoes de paginas de produto e cliques no WhatsApp.
+
+O catalogo tambem ja tem polimentos de vitrine para a fase antes dos produtos finais: filtros responsivos, ordenacao, estados vazios, loading, erro, SEO social e checklist de cadastro incompleto no admin.
+
+## Stack
+
+- Next.js 16 com App Router e TypeScript
+- React 19
+- Tailwind CSS
+- Supabase Database, Auth e Storage
+- shadcn/ui para a interface admin
+- dnd-kit para reordenacao de imagens
+- csv-parse para importacao CSV
+- sharp para validar, redimensionar e converter uploads para WebP
+
+## Configuracao
+
+1. Instale as dependencias:
+
+```bash
+npm.cmd install
+```
+
+2. Crie um projeto no Supabase.
+
+3. Execute o SQL de `supabase.sql` no SQL editor do Supabase. O arquivo cria tabelas, indices, RLS e policies do bucket `produtos`, incluindo `product_variants`, `catalog_banners`, banners responsivos, campos de estoque profissional, `stock_movements` e `analytics_events`.
+
+4. O email `liensiparadise@gmail.com` ja esta autorizado como admin no `supabase.sql`. Se o usuario Auth ja existir e estiver pendente de confirmacao, o SQL confirma o email e define a senha `Liensi@123`.
+
+5. Para criar ou recriar o usuario Auth por script, adicione `SUPABASE_SERVICE_ROLE_KEY` no `.env` e rode:
+
+```bash
+npm.cmd run create-admin -- liensiparadise@gmail.com sua-senha
+```
+
+6. Copie `.env.example` para `.env.local` e preencha:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+NEXT_PUBLIC_SITE_URL=https://seudominio.com
+NEXT_PUBLIC_WHATSAPP_NUMBER=5511999999999
+```
+
+O `NEXT_PUBLIC_SITE_URL` e usado para sitemap e URLs canonicas das paginas de produto. Em desenvolvimento pode usar `http://localhost:3000`.
+
+O `NEXT_PUBLIC_WHATSAPP_NUMBER` e usado para montar links `https://wa.me/...` no botao flutuante do catalogo. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia a mensagem com nome e URL da pagina. Depois de alterar esse valor com o servidor local aberto, reinicie `npm.cmd run dev`.
+
+## Rodando Localmente
+
+```bash
+npm.cmd run dev
+```
+
+Acesse:
+
+- Catalogo: `http://localhost:3000`
+- Admin: `http://localhost:3000/admin`
+
+## Importacao CSV
+
+No admin, acesse `Produtos > Importar`.
+
+O importador cria ou atualiza produtos usando o `slug` como chave. Se a categoria informada nao existir, ela sera criada automaticamente.
+
+Colunas aceitas:
+
+```csv
+sku,nome,slug,descricao,preco,preco_promocional,estoque,estoque_minimo,categoria,ativo,image_paths,cover_image_path
+```
+
+Tambem sao aceitos aliases em ingles, como `name`, `description`, `price`, `promotional_price`, `stock`, `category` e `active`.
+
+CSVs de estoque da Roxflow tambem sao aceitos:
+
+- `item_name` vira `nome`
+- `quantity` vira `estoque`
+- `cost_price` ou `cost` vira `preco`
+- `sku`, `codigo`, `cod`, `ref` ou `referencia` viram o codigo interno/SKU
+- quando nao houver `categoria`, o produto entra na categoria `Geral`
+
+Regras:
+
+- O importador e tolerante para CSVs incompletos.
+- `categoria` nunca e obrigatoria; quando faltar, sera criada/usada a categoria `Geral`.
+- `nome` e o unico campo realmente necessario. Se faltar, o importador tenta gerar com `sku`, `id` ou `inventory_id`.
+- Se `preco` faltar ou vier invalido, o produto entra com preco `0` e fica inativo ate revisao.
+- Se `estoque` faltar ou vier invalido, o produto entra com estoque `0`.
+- `estoque_minimo` e opcional; quando vazio, usa `3` como limite de baixo estoque.
+- `slug` e opcional; quando vazio, sera gerado pelo nome.
+- `ativo` aceita valores como `sim`, `nao`, `true`, `false`, `ativo` e `inativo`.
+- `image_paths` e opcional e deve conter caminhos ja existentes no bucket `produtos`, separados por `|`.
+- Quando `image_paths` vier preenchido, a galeria cadastrada daquele produto sera substituida pelos paths do CSV.
+- Existe um modelo em `public/templates/produtos.csv`.
+
+## Logica de Produtos
+
+- Produtos podem ter zero, uma ou varias imagens. Imagem nao e obrigatoria; sem imagem, o catalogo usa o placeholder visual da LIENSI.
+- Uploads manuais de produto aceitam JPG, PNG ou WebP ate 10 MB e sao convertidos para WebP no servidor.
+- Imagens principais do catalogo e da pagina de produto usam `next/image` com tamanhos estaveis e dominio do Supabase configurado em `next.config.mjs`.
+- A galeria usa `product_images.display_order` para ordenar imagens e `is_cover` para escolher a capa.
+- A pagina de produto exibe carrossel quando ha mais de uma imagem, com setas, contador, miniaturas e swipe no mobile.
+- A base de midia fica centralizada em `getProductMedia()`, com capa, lista ordenada, slides e flags de multiplas imagens.
+- Preco real fica em `products.price`; preco promocional opcional fica em `products.promotional_price`.
+- A logica de promocao fica centralizada em `getProductPricing()`: ela valida se a promocao e menor que o preco real, calcula o preco atual, o valor de desconto e o percentual de desconto.
+- O percentual de desconto aparece nos badges de promocao dos cards e da pagina de produto.
+- Campos manuais de preco aceitam formatos como `199,90` e `199.90`.
+- Produtos podem ter variantes opcionais em `product_variants`, como cor, tamanho ou outra opcao.
+- A pagina de produto mostra seletor de variantes quando existe pelo menos uma variante ativa.
+- Ao clicar no WhatsApp com uma variante selecionada, a mensagem inclui o nome da variante junto do produto.
+
+## Estoque
+
+- Produtos possuem SKU/codigo interno opcional.
+- Variantes possuem nome, SKU opcional, cor opcional, estoque proprio, ordem e status ativo/inativo.
+- Quando um produto tem variantes ativas, o estoque exibido no catalogo e no admin e a soma do estoque dessas variantes.
+- Quando nao ha variantes ativas, o produto usa o estoque geral de `products.stock`.
+- A listagem admin nao faz ajuste inline de estoque para produtos com variantes; nesses casos o ajuste fica no formulario do produto, por variante.
+- Cada produto tem `low_stock_threshold`, usado para alertar baixo estoque no admin.
+- A listagem de produtos tem filtros para ativos, inativos, esgotados, baixo estoque e promocoes.
+- Alteracoes de estoque feitas pelo formulario do produto, variantes, listagem inline ou importacao CSV geram registros em `stock_movements`.
+- O historico de estoque aparece na tela de edicao de cada produto.
+- O historico e privado: somente admin autenticado consegue ler/escrever `stock_movements`.
+- Custo de compra ainda nao foi adicionado porque e dado sensivel e nao deve ficar exposto junto da tabela publica de produtos sem uma separacao propria.
+
+## Analytics
+
+- O catalogo registra eventos anonimos de `catalog_view`, `product_card_click`, `product_view` e `whatsapp_click`.
+- Cada navegador recebe um `liensi_visitor_id` anonimo no `localStorage`; nao existe login de cliente.
+- A rota `/api/analytics/event` valida os eventos e grava em `analytics_events`.
+- A pagina `/admin/analytics` mostra visitantes unicos, eventos por tipo, produtos que mais levam ao WhatsApp, conversao card -> WhatsApp e eventos recentes.
+- A conversao e uma metrica de intencao: ela mede clique no WhatsApp, nao confirma envio de mensagem nem venda.
+- O app respeita `Do Not Track` quando o navegador envia `navigator.doNotTrack = "1"`.
+- O banco nao guarda IP bruto. O evento pode guardar path, referrer, user agent e metadados simples para leitura operacional.
+
+## Banners do Catalogo
+
+- Banners sao gerenciados em `/admin/banners`.
+- Cada banner tem imagem desktop obrigatoria, imagem mobile opcional, foco horizontal/vertical, titulo, chamada curta, texto, botao/link, texto alternativo, ordem e status ativo/inativo.
+- O catalogo mostra um carrossel no topo quando existe pelo menos um banner ativo, com swipe no mobile.
+- Quando nao houver banner ativo, a area de banner nao aparece.
+- Uploads de banner aceitam JPG, PNG ou WebP ate 10 MB e sao convertidos para WebP no servidor.
+- As imagens dos banners sao salvas no bucket publico `produtos`, nos caminhos `banners/desktop-{uuid}.webp` e `banners/mobile-{uuid}.webp`.
+- Quando nao houver imagem mobile, o catalogo usa a imagem desktop tambem no mobile.
+- Para habilitar essa funcionalidade no Supabase, reaplique `supabase.sql` ou `doc.sql`.
+
+## Paginas de Produto
+
+Cada produto ativo ganha uma pagina publica em:
+
+```txt
+/produto/slug-do-produto
+```
+
+Os cards da home apontam para essa pagina, e a listagem admin mostra um botao `Ver pagina` para produtos ativos. A galeria da pagina individual funciona como carrossel quando o produto tem varias imagens. Quando o produto tem variantes ativas, a pagina mostra as opcoes antes do botao WhatsApp. O Next gera paginas estaticas para os slugs ativos com ISR de 60 segundos e tambem publica `/sitemap.xml` com uma URL por produto.
+
+As paginas de produto possuem metadata propria, Open Graph/Twitter card e fallback de detalhes quando a descricao ainda nao foi escrita.
+
+## Vitrine e SEO
+
+- A home tem busca, filtro por categoria, ordenacao por novidades, menor preco, maior preco e promocoes primeiro.
+- O catalogo mostra contador de produtos encontrados e estado vazio diferente para catalogo sem produtos ou filtros sem resultado.
+- Existem telas de loading/erro para produto e admin, alem de uma pagina 404 editorial.
+- `/opengraph-image` gera a imagem social padrao da marca.
+- `/robots.txt` permite o catalogo publico e bloqueia `/admin` e `/api`.
+- O botao do WhatsApp respeita `safe-area-inset-bottom` para nao colar na borda de celulares.
+
+No desenvolvimento atual, o app esta rodando em `http://localhost:3002`; a porta `3000` pode estar ocupada por outro servico local. Use a porta exibida pelo `npm.cmd run dev`.
+
+## Comandos
+
+```bash
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run start
+```
+
+## Notas
+
+- O cliente final nao faz login. Ele apenas le o catalogo publico e chama o WhatsApp.
+- O admin mostra mensagens de sucesso/erro apos acoes comuns e usa botoes com estado de carregamento para evitar cliques duplicados.
+- Exclusoes de produto, categoria, banner e imagem pedem confirmacao antes de executar.
+- O formulario de produto tem uma previa da vitrine com imagem, categoria, status, estoque e promocao antes de salvar.
+- O formulario de produto tambem permite editar SKU, limite de baixo estoque e variantes com estoque proprio, e mostra checklist de prontidao da vitrine.
+- A listagem e o painel admin destacam produtos incompletos, com filtro dedicado em `/admin/produtos?stock=incomplete`.
+- Nomes de produtos sao exibidos com capitalizacao de titulo no catalogo, paginas de produto e listagem admin.
+- Produtos criados manualmente ou importados por CSV passam a salvar o nome com capitalizacao normalizada.
+- O header publico nao mostra link para o admin; o acesso admin fica separado em `/admin`.
+- O admin tem um atalho `Catalogo` para abrir a vitrine publica.
+- O admin tem uma aba `Banners` para editar o carrossel do topo da vitrine.
+- O admin tem uma aba `Analytics` para acompanhar o funil anonimo ate o WhatsApp.
+- O catalogo publico usa um botao fixo de WhatsApp no centro inferior da tela, sem fundo, exibindo apenas o icone em tamanho proporcional a viewport.
+- Nao ha cadastro publico no app.
+- O arquivo oficial para aplicar/evoluir o banco e `supabase.sql`.
+- Produtos inativos nao aparecem no catalogo publico.
+- Produtos inativos nao geram pagina publica acessivel; ao ativar o produto, a pagina fica disponivel em `/produto/[slug]`.
+- Produtos sem estoque exibem badge de esgotado e bloqueiam o botao do WhatsApp.
+- Produtos com estoque menor ou igual ao limite configurado aparecem como baixo estoque no admin.
+- Variantes inativas nao contam no estoque publico nem aparecem no seletor do catalogo.
+- Imagens sao salvas no bucket publico `produtos`, no caminho `products/{productId}/{uuid}.webp`.
+- Imagens de banner sao salvas no mesmo bucket publico `produtos`, no caminho `banners/...`.
+- Somente emails ativos em `public.admin_users` sao tratados como admin.

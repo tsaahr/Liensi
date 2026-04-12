@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 262 83% 58%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 270 95% 75%;
+    --primary-foreground: 240 6% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 270 95% 75%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+  }
+
+  a,
+  button {
+    touch-action: manipulation;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+}
+
+@layer components {
+  .catalog-shell {
+    min-height: 100vh;
+    color: #f8f4ff;
+    color-scheme: dark;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(192, 132, 252, 0.18), transparent 30rem),
+      radial-gradient(circle at 78% 6%, rgba(78, 70, 229, 0.1), transparent 26rem),
+      linear-gradient(180deg, #11111a 0%, #0a0a0f 38%, #08080c 100%);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .catalog-shell::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.16;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 3px 3px;
+    mix-blend-mode: overlay;
+  }
+
+  .catalog-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .editorial-hero {
+    background-image:
+      linear-gradient(90deg, rgba(10, 10, 15, 0.96) 0%, rgba(10, 10, 15, 0.68) 48%, rgba(10, 10, 15, 0.16) 100%),
+      url("https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=80");
+    background-position: center;
+    background-size: cover;
+  }
+
+  .catalog-card {
+    animation: fade-up 700ms ease-out both;
+    border-color: rgba(255, 255, 255, 0.11);
+    background: rgba(255, 255, 255, 0.045);
+    transition:
+      transform 220ms ease,
+      border-color 220ms ease,
+      box-shadow 220ms ease,
+      background 220ms ease;
+  }
+
+  .catalog-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(192, 132, 252, 0.78);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 22px 55px rgba(192, 132, 252, 0.14);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .catalog-card,
+    .animate-fade-up,
+    .animate-soft-glow {
+      animation: none !important;
+      transition-duration: 1ms !important;
+    }
+
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
