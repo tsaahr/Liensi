@@ -19,10 +19,12 @@
 - Edicao admin de galeria de produto corrigida para nao renderizar `<form>` dentro do formulario principal do produto; botoes de capa/exclusao/ordem usam `formAction` e o `DndContext` tem id estavel para evitar mismatch de hidratacao.
 - Supabase preparado via `supabase.sql` com tabela `admin_users`, funcao `is_admin()`, tabelas do catalogo, tabela `product_variants`, tabela `catalog_banners` responsiva, tabela `stock_movements`, tabela `analytics_events`, indices, RLS e policies de storage para o bucket `produtos`.
 - Endurecimento de seguranca aplicado no setup Supabase/Vercel: frontend agora aceita `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (com fallback legado para `NEXT_PUBLIC_SUPABASE_ANON_KEY`), bloqueia boot/build se uma chave secreta `sb_secret_`/`service_role` for exposta em `NEXT_PUBLIC_*`, e o script `create-admin` passou a preferir `SUPABASE_SECRET_KEY`.
+- Admin ganhou `/admin/financas` com valor bruto potencial do estoque ativo, resumo por categoria e impacto de promocoes; `/admin/configuracoes` permite trocar o WhatsApp do catalogo via `site_settings`; `/admin/categorias` ganhou fluxo de mover varios produtos para uma categoria por checkbox.
+- `.env` local foi corrigido nesta sessao: a chave publica do Supabase saiu de `NEXT_PUBLIC_SUPABASE_ANON_KEY` inseguro para `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, e a `sb_secret_...` foi movida para `SUPABASE_SECRET_KEY`.
 - A intencao atual do produto e: somente admin faz login; clientes apenas leem o catalogo publico e abrem WhatsApp.
 - Solicitacao de criacao do usuario Auth `liensiparadise@gmail.com` foi aceita pelo Supabase, mas o login testado retornou `Email not confirmed`; `supabase.sql` agora confirma esse usuario sem gravar senha fixa no repositorio. A senha deve ser definida no painel Auth ou via `scripts/create-admin.mjs`.
 - Validacao local apos ajustar filtros/categorias e remover cor visual das variantes: `npm.cmd run lint` e `npm.cmd run build` passaram.
-- Validacao desta sessao: `npm.cmd run lint` passou; `npm.cmd run build` agora falha de proposito quando a env publica do Supabase estiver insegura, bloqueando deploy com `sb_secret_`/`service_role` em `NEXT_PUBLIC_*`.
+- Validacao desta sessao: `npm.cmd run lint` e `npm.cmd run build` passaram com as novas telas de financas/configuracoes, WhatsApp via `site_settings` e organizacao em massa de categorias.
 - Apos troca manual do `Liensi.png`, os icones derivados foram regenerados novamente.
 
 ## [LOG DE ALTERACOES]
@@ -76,6 +78,11 @@
 - `scripts/create-admin.mjs`: script para criar admin via chave de backend (`SUPABASE_SECRET_KEY`, com fallback legado para `SUPABASE_SERVICE_ROLE_KEY`). Nao usa signup publico.
 - `lib/env.ts`, `lib/supabase/server.ts`, `lib/supabase/browser.ts`, `lib/supabase/public.ts`, `next.config.mjs`: frontend passou a usar chave publica/publishable do Supabase e ganhou trava explicita contra `sb_secret_`/`service_role` em `NEXT_PUBLIC_*`.
 - `README.md`, `READMEAI.md`, `.env.example`: instrucoes de setup/deploy atualizadas para Vercel, chave publishable no frontend e segredo de backend fora do frontend.
+- `.env`: atualizado para usar `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no frontend e `SUPABASE_SECRET_KEY` no backend local.
+- `supabase.sql`, `lib/settings.ts`, `lib/whatsapp.ts`, `lib/admin-data.ts`, `lib/admin-actions.ts`, `components/catalog/whatsapp-button.tsx`, `components/catalog/product-variant-picker.tsx`, `app/page.tsx`, `app/produto/[slug]/page.tsx`: numero do WhatsApp passou a ser configuravel por `site_settings`, com fallback seguro no `.env` e revalidacao do catalogo apos salvar.
+- `app/admin/configuracoes/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area admin para trocar o WhatsApp do catalogo e atalhos/menu para a nova tela.
+- `app/admin/financas/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area financeira operacional com produtos cadastrados, unidades em estoque, valor bruto potencial se vender tudo, resumo por categoria e impacto de descontos.
+- `app/admin/categorias/page.tsx`, `lib/admin-actions.ts`: categorias ganharam formulario por categoria para mover varios produtos de uma vez usando checkboxes.
 
 ## [BLOQUEIOS/ERROS]
 
@@ -84,10 +91,10 @@
 - O build local pode retornar catalogo vazio se `.env.local` ainda nao existir; isso e intencional para permitir compilar antes de conectar ao Supabase.
 - O projeto foi migrado para Next 16.2.3 depois que o escopo permitiu tecnologia mais atual; isso removeu o alerta de audit da linha Next 14/15.
 - As portas `3000` e `3001` ja estavam ocupadas por outros servicos; o dev server do Liensi foi iniciado em `http://localhost:3002`.
-- Variaveis `NEXT_PUBLIC_*` sao lidas pelo Next no build/dev server; se mudar `NEXT_PUBLIC_WHATSAPP_NUMBER` ou `NEXT_PUBLIC_SITE_URL` com o servidor aberto, reiniciar `npm.cmd run dev`.
+- Variaveis `NEXT_PUBLIC_*` sao lidas pelo Next no build/dev server; se mudar `NEXT_PUBLIC_SITE_URL` ou o fallback `NEXT_PUBLIC_WHATSAPP_NUMBER` com o servidor aberto, reiniciar `npm.cmd run dev`. O WhatsApp salvo em `/admin/configuracoes` vem de `site_settings` e nao precisa de rebuild.
 - Paginas de produto chegaram a retornar 404 mesmo com produto ativo porque `params.slug` estava sendo lido de forma sincrona. No Next 16, `params` e `searchParams` devem ser aguardados. Corrigido em `/produto/[slug]`, `/admin/produtos/[id]/editar`, `/`, `/admin/login` e `/admin/produtos/importar`.
 - O setup agora bloqueia `next dev`/`next build` se uma chave secreta do Supabase (`sb_secret_` ou JWT `service_role`) for colocada em `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ou `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Se isso acontecer, mover a chave para `SUPABASE_SECRET_KEY` e cadastrar a chave publica correta no frontend.
-- Neste workspace, `npm.cmd run build` esta falhando por esse freio novo, o que indica que a env publica local ainda precisa ser trocada pela publishable/anon correta antes do proximo deploy.
+- Esse bloqueio foi contornado ao corrigir o `.env` local; builds atuais passam usando `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - O importador CSV nao faz upload de arquivos de imagem; ele apenas vincula `image_paths` ja existentes no bucket `produtos`. Para imagem nova, subir pelo formulario do produto ou via Storage antes de importar o path.
 - A primeira tentativa com `C:\Users\lithy\Downloads\roxflow-estoque-2026-04-11T23-11-08.csv` retornou `created=0`, `updated=0`, `errors=19`, porque o CSV nao tinha coluna `categoria`. O importador foi ajustado novamente para nao exigir categoria nem preco/estoque perfeitos: categoria ausente usa `Geral`, preco ausente/invalido usa `0` e deixa o produto inativo, estoque ausente/invalido usa `0`.
 - No modo `Somar ao estoque atual`, CSV com estoque ausente/invalido soma `0`, porque a importacao permissiva continua usando default seguro. Conferir avisos da tela antes de considerar o estoque final fechado.
@@ -96,6 +103,7 @@
 - Para banners responsivos tambem houve mudanca de banco; e obrigatorio reexecutar `supabase.sql` antes de salvar banner com imagem mobile/foco. A consulta publica de banners tem fallback para compilar/carregar enquanto as colunas novas ainda nao existem.
 - `sharp` foi adicionado como dependencia de runtime porque o processamento de imagem acontece nas server actions. Nao importar `lib/image-processing.ts` em componentes client.
 - Para analytics houve mudanca de banco; e obrigatorio reexecutar `supabase.sql` para criar `analytics_events`. Antes disso, `/admin/analytics` mostra aviso de setup, e `/api/analytics/event` responde sem quebrar a navegacao caso a insercao falhe.
+- Para WhatsApp configuravel houve mudanca de banco; e obrigatorio reexecutar `supabase.sql` para criar `site_settings`. Antes disso, o catalogo usa `NEXT_PUBLIC_WHATSAPP_NUMBER` como fallback e `/admin/configuracoes` mostra aviso de setup.
 - `next/image` exige que `NEXT_PUBLIC_SUPABASE_URL` esteja disponivel no build para configurar `remotePatterns`. Sem essa env, o build ainda passa, mas imagens remotas do Supabase precisam do env correto no runtime/build de producao.
 - Build falhou uma vez porque `discountPercentage` pode ser `null` na ordenacao por promocoes. Corrigido com fallback `?? 0`.
 - Para variantes houve mudanca de banco; e obrigatorio reexecutar `supabase.sql` antes de salvar produtos com variantes. A consulta publica de produtos tem fallback para compilar/carregar enquanto `product_variants` ainda nao existe, mas o admin depende da tabela nova.
@@ -113,28 +121,33 @@
 
 ## [PROXIMOS PASSOS]
 
-1. Reexecutar `supabase.sql` no Supabase para criar/atualizar schema, incluindo `product_variants`, banners responsivos, `stock_movements`, `analytics_events`, campos de SKU/baixo estoque, policies, whitelist admin e confirmacao de email para `liensiparadise@gmail.com`.
+1. Reexecutar `supabase.sql` no Supabase para criar/atualizar schema, incluindo `product_variants`, banners responsivos, `stock_movements`, `analytics_events`, `site_settings`, campos de SKU/baixo estoque, policies, whitelist admin e confirmacao de email para `liensiparadise@gmail.com`.
 2. Ajustar env local/Vercel para usar `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no frontend; se existir uma `sb_secret_...` atual em `NEXT_PUBLIC_SUPABASE_ANON_KEY`, mover essa credencial para `SUPABASE_SECRET_KEY` e buscar a publishable key correta no painel do Supabase.
-3. Se o login ainda falhar, confirmar/criar o usuario em Supabase Auth ou adicionar `SUPABASE_SECRET_KEY` e rodar `npm.cmd run create-admin -- liensiparadise@gmail.com <senha>`.
-4. Abrir `/admin/produtos/[id]/editar` no navegador e confirmar que a galeria nao mostra mais hydration error, que reordenar/salvar ordem funciona, que definir capa funciona e que excluir imagem continua pedindo confirmacao.
-5. Abrir `/admin/analytics` com mais de 8 eventos recentes e confirmar que a lista inicial fica curta, que `Ver mais` adiciona mais eventos sem scroll longo inicial e que o estado vazio continua funcionando.
-6. Abrir a home e testar filtros publicos: nao deve aparecer o titulo `Escolha com calma`, a categoria `Geral` nao deve aparecer separada de `Todas as categorias`, busca deve gerar `?busca=...`, categoria deve gerar `categoria`, ordenacao deve mostrar `Promocao`, gerar `ordem=menor-preco`/`maior-preco`/`promocoes`, e links antigos com `category`/`sort` ainda devem funcionar.
-7. Rodar `npm.cmd run lint` e `npm.cmd run build` apos novas alteracoes.
-8. Testar fluxo admin: criar categoria, criar produto, adicionar variantes com estoque, enviar imagens, reordenar galeria, definir capa, excluir imagem secundaria, excluir imagem de capa, ajustar estoque e conferir checklist de prontidao.
-9. Testar importacao CSV com `C:\Users\lithy\Downloads\roxflow-estoque-2026-04-11T23-11-08.csv` nos dois modos de estoque (`Substituir` e `Somar`) e confirmar no feedback da tela quantos produtos foram criados/atualizados e quantos ajustes automaticos foram aplicados.
-10. Criar pelo menos um banner em `/admin/banners`, testar imagem desktop/mobile, ajustar foco e validar que a home mostra o carrossel; desativar/excluir todos e validar que a area some.
-11. Validar no admin que mensagens de sucesso/erro aparecem, botoes entram em loading e confirmacoes bloqueiam exclusoes acidentais.
-12. Testar filtros de estoque em `/admin/produtos`, mudar estoque inline em produto sem variante, mudar estoque por variante no formulario e confirmar o historico em `/admin/produtos/[id]/editar`.
-13. Com dados reais no Supabase, validar visualmente a home, detalhe de produto, filtros/ordenacao, swipe mobile e o fluxo completo do admin.
-14. Testar analytics: abrir a home em aba anonima, clicar em um produto, clicar no WhatsApp e confirmar em `/admin/analytics` que os eventos aparecem apos alguns segundos.
-15. Validar visualmente o favicon na aba do navegador e os icones de atalho/mobile depois de subir ou reiniciar o dev server.
-16. Futuramente, se o volume crescer, criar agregacoes SQL/materialized views para analytics em vez de ler ate 5.000 eventos recentes no admin.
+3. Ajustar na Vercel os mesmos valores corrigidos localmente: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_WHATSAPP_NUMBER` e, quando souber o dominio final, `NEXT_PUBLIC_SITE_URL`.
+4. Se o login ainda falhar, confirmar/criar o usuario em Supabase Auth ou adicionar `SUPABASE_SECRET_KEY` e rodar `npm.cmd run create-admin -- liensiparadise@gmail.com <senha>`.
+5. Abrir `/admin/produtos/[id]/editar` no navegador e confirmar que a galeria nao mostra mais hydration error, que reordenar/salvar ordem funciona, que definir capa funciona e que excluir imagem continua pedindo confirmacao.
+6. Abrir `/admin/analytics` com mais de 8 eventos recentes e confirmar que a lista inicial fica curta, que `Ver mais` adiciona mais eventos sem scroll longo inicial e que o estado vazio continua funcionando.
+7. Abrir a home e testar filtros publicos: nao deve aparecer o titulo `Escolha com calma`, a categoria `Geral` nao deve aparecer separada de `Todas as categorias`, busca deve gerar `?busca=...`, categoria deve gerar `categoria`, ordenacao deve mostrar `Promocao`, gerar `ordem=menor-preco`/`maior-preco`/`promocoes`, e links antigos com `category`/`sort` ainda devem funcionar.
+8. Rodar `npm.cmd run lint` e `npm.cmd run build` apos novas alteracoes.
+9. Testar fluxo admin: criar categoria, criar produto, adicionar variantes com estoque, enviar imagens, reordenar galeria, definir capa, excluir imagem secundaria, excluir imagem de capa, ajustar estoque e conferir checklist de prontidao.
+10. Testar importacao CSV com `C:\Users\lithy\Downloads\roxflow-estoque-2026-04-11T23-11-08.csv` nos dois modos de estoque (`Substituir` e `Somar`) e confirmar no feedback da tela quantos produtos foram criados/atualizados e quantos ajustes automaticos foram aplicados.
+11. Criar pelo menos um banner em `/admin/banners`, testar imagem desktop/mobile, ajustar foco e validar que a home mostra o carrossel; desativar/excluir todos e validar que a area some.
+12. Validar no admin que mensagens de sucesso/erro aparecem, botoes entram em loading e confirmacoes bloqueiam exclusoes acidentais.
+13. Testar filtros de estoque em `/admin/produtos`, mudar estoque inline em produto sem variante, mudar estoque por variante no formulario e confirmar o historico em `/admin/produtos/[id]/editar`.
+14. Com dados reais no Supabase, validar visualmente a home, detalhe de produto, filtros/ordenacao, swipe mobile e o fluxo completo do admin.
+15. Testar analytics: abrir a home em aba anonima, clicar em um produto, clicar no WhatsApp e confirmar em `/admin/analytics` que os eventos aparecem apos alguns segundos.
+16. Testar `/admin/configuracoes`: trocar o WhatsApp, abrir o catalogo e confirmar que o link `wa.me` usa o numero novo sem novo deploy.
+17. Testar `/admin/financas` com produtos com e sem variantes, confirmando que o valor potencial usa estoque agregado e preco promocional valido.
+18. Testar `/admin/categorias`: mover produtos em massa para uma categoria e conferir que filtros do catalogo e paginas de produto atualizam.
+19. Validar visualmente o favicon na aba do navegador e os icones de atalho/mobile depois de subir ou reiniciar o dev server.
+20. Futuramente, se o volume crescer, criar agregacoes SQL/materialized views para analytics em vez de ler ate 5.000 eventos recentes no admin.
 
 ## [NOTAS DE ARQUITETURA]
 
 - Somente usuarios autenticados cujo email ativo existe em `public.admin_users` sao admin.
 - O catalogo usa leitura publica via RLS apenas para produtos ativos; admins autenticados conseguem ler produtos inativos.
 - As policies de escrita usam `public.is_admin()`; signup publico nao concede admin sem whitelist.
+- `site_settings` e tabela publica apenas para chaves explicitamente liberadas por policy (`whatsapp_number`). Nao guardar segredos nela; configuracoes sensiveis devem ficar em env/backend.
 - Nao adicionar login/cadastro de cliente sem uma mudanca explicita de escopo.
 - Nao expor link de admin no catalogo publico; o acesso ao admin deve ser conhecido pelo dono e feito via `/admin`.
 - `supabase.sql` e o arquivo canonico para mudancas de banco; sempre atualizar ele quando novas entidades/campos/policies forem necessarios.
@@ -153,7 +166,7 @@
 - A seta de voltar da pagina de produto e um `Link` para `/#catalogo`, nao `history.back()`, para funcionar bem mesmo quando o usuario abre a URL direta ou vem de fora.
 - A descricao do produto e um client component pequeno apenas para medir overflow e alternar `Ver mais`. Manter a pagina de produto como Server Component e nao mover dados/queries para o client.
 - Em desktop, a galeria da pagina de produto fica em wrapper `lg:sticky lg:top-24` e a coluna textual usa alinhamento ao topo; isso evita o texto ficar centralizado ao lado da foto e melhora descricoes maiores.
-- O botao WhatsApp publico e fixo no centro inferior, sem fundo, com `size-[clamp(64px,12vmin,120px)]` e icone `size-[clamp(46px,8.4vmin,84px)]`, para escalar como porcentagem da viewport sem perder limite minimo/maximo. Ele usa `NEXT_PUBLIC_WHATSAPP_NUMBER` via `lib/whatsapp.ts` e monta `https://wa.me/<numero>?text=...`; o numero e normalizado com `digitsOnly`. Na pagina do produto a mensagem nao leva URL: `Ola, tenho interesse no {nome do produto}`.
+- O botao WhatsApp publico e fixo no centro inferior, sem fundo, com `size-[clamp(64px,12vmin,120px)]` e icone `size-[clamp(46px,8.4vmin,84px)]`, para escalar como porcentagem da viewport sem perder limite minimo/maximo. O numero vem de `site_settings.whatsapp_number` quando a tabela existe e cai para `NEXT_PUBLIC_WHATSAPP_NUMBER` como fallback; `lib/whatsapp.ts` monta `https://wa.me/<numero>?text=...` e normaliza com `digitsOnly`. Na pagina do produto a mensagem nao leva URL: `Ola, tenho interesse no {nome do produto}`.
 - Imagens ficam publicas no bucket `produtos`, evitando URL assinada para o catalogo.
 - Produto sem imagem e um estado valido. Nao adicionar constraint exigindo imagem em `product_images`.
 - `getProductMedia()` e a fonte unica para ordenar galeria, capa e futuros slides de carrossel.

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import {
   BarChart3,
+  CircleDollarSign,
   ExternalLink,
   Images,
   LayoutDashboard,
   Package,
+  Settings,
   Tags,
   Upload
 } from "lucide-react";
@@ -56,9 +58,21 @@ export function AdminShell({ children }: AdminShellProps) {
               </Link>
             </Button>
             <Button variant="ghost" asChild>
+              <Link href="/admin/financas">
+                <CircleDollarSign data-icon="inline-start" />
+                Financas
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
               <Link href="/admin/analytics">
                 <BarChart3 data-icon="inline-start" />
                 Analytics
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/admin/configuracoes">
+                <Settings data-icon="inline-start" />
+                Config
               </Link>
             </Button>
             <Button variant="ghost" asChild>

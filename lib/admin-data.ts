@@ -1,11 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUrl } from "@/lib/env";
 import type { AnalyticsEvent, AnalyticsEventType } from "@/lib/analytics";
+import {
+  getFallbackWhatsAppNumber,
+  normalizeWhatsAppNumber,
+  WHATSAPP_SETTING_KEY
+} from "@/lib/settings";
 import type {
   CatalogBanner,
   Category,
   Product,
   ProductImage,
+  SiteSetting,
   ProductVariant,
   StockMovement
 } from "@/lib/types";
@@ -53,6 +59,13 @@ export type AdminAnalyticsSummary = {
   limit_reached: boolean;
 };
 
+export type AdminSiteSettings = {
+  whatsappNumber: string;
+  whatsappNumberSource: "database" | "env";
+  setupMissing: boolean;
+  updatedAt: string | null;
+};
+
 const analyticsEventTypes: AnalyticsEventType[] = [
   "catalog_view",
   "product_card_click",
@@ -62,6 +75,10 @@ const analyticsEventTypes: AnalyticsEventType[] = [
 
 function getImageUrl(path: string) {
   return `${supabaseUrl}/storage/v1/object/public/produtos/${path}`;
+}
+
+function isMissingSettingsTable(message: string) {
+  return message.includes("site_settings") || message.includes("Could not find the table");
 }
 
 function normalizeProduct(product: ProductRecord): Product {
@@ -163,6 +180,39 @@ export async function getAdminBanners() {
   }
 
   return ((data ?? []) as CatalogBannerRecord[]).map(normalizeBanner);
+}
+
+export async function getAdminSiteSettings(): Promise<AdminSiteSettings> {
+  const supabase = await createClient();
+  const fallbackNumber = getFallbackWhatsAppNumber();
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("key,value,created_at,updated_at")
+    .eq("key", WHATSAPP_SETTING_KEY)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingSettingsTable(error.message)) {
+      return {
+        whatsappNumber: fallbackNumber,
+        whatsappNumberSource: "env",
+        setupMissing: true,
+        updatedAt: null
+      };
+    }
+
+    throw new Error(error.message);
+  }
+
+  const setting = data as SiteSetting | null;
+  const savedNumber = normalizeWhatsAppNumber(setting?.value);
+
+  return {
+    whatsappNumber: savedNumber || fallbackNumber,
+    whatsappNumberSource: savedNumber ? "database" : "env",
+    setupMissing: false,
+    updatedAt: setting?.updated_at ?? null
+  };
 }
 
 export async function getAdminProduct(id: string) {

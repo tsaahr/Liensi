@@ -70,6 +70,13 @@ export type CatalogBanner = {
   mobile_url: string | null;
 };
 
+export type SiteSetting = {
+  key: string;
+  value: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type StockMovement = {
   id: string;
   product_id: string;

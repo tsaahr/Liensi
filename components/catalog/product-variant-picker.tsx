@@ -13,6 +13,7 @@ type ProductVariantPickerProps = {
   productName: string;
   fallbackStock: number;
   variants: ProductVariant[];
+  whatsappNumber?: string;
 };
 
 export function ProductVariantPicker({
@@ -20,7 +21,8 @@ export function ProductVariantPicker({
   productSlug,
   productName,
   fallbackStock,
-  variants
+  variants,
+  whatsappNumber
 }: ProductVariantPickerProps) {
   const activeVariants = useMemo(() => getActiveVariants(variants), [variants]);
   const firstAvailableVariant =
@@ -77,6 +79,7 @@ export function ProductVariantPicker({
         productId={productId}
         productSlug={productSlug}
         productName={whatsappProductName}
+        whatsappNumber={whatsappNumber}
         disabled={availableStock <= 0}
       />
     </div>

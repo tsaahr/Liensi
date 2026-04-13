@@ -11,6 +11,7 @@ type WhatsAppButtonProps = {
   productSlug?: string;
   productName?: string;
   message?: string;
+  whatsappNumber?: string;
   disabled?: boolean;
 };
 
@@ -18,6 +19,7 @@ export function WhatsAppButton({
   productId,
   productSlug,
   productName,
+  whatsappNumber,
   message = "Olá, quero falar com a Liensi.",
   disabled = false
 }: WhatsAppButtonProps) {
@@ -25,8 +27,8 @@ export function WhatsAppButton({
     () => (productName ? getProductWhatsAppMessage(productName) : message),
     [message, productName]
   );
-  const hasNumber = Boolean(getWhatsAppNumber());
-  const href = getWhatsAppHref(whatsappMessage);
+  const hasNumber = Boolean(getWhatsAppNumber(whatsappNumber));
+  const href = getWhatsAppHref(whatsappMessage, whatsappNumber);
   const isDisabled = disabled || !hasNumber;
 
   const className =

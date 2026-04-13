@@ -3,9 +3,11 @@ import {
   AlertTriangle,
   Boxes,
   CheckCircle2,
+  CircleDollarSign,
   Image as ImageIcon,
   Megaphone,
   Package,
+  Settings,
   Tags
 } from "lucide-react";
 
@@ -204,9 +206,21 @@ export default async function AdminPage() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/financas">
+                <CircleDollarSign data-icon="inline-start" />
+                Ver financas
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
               <Link href="/admin/categorias">
                 <Tags data-icon="inline-start" />
                 Organizar categorias
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start">
+              <Link href="/admin/configuracoes">
+                <Settings data-icon="inline-start" />
+                Configurar WhatsApp
               </Link>
             </Button>
           </CardContent>

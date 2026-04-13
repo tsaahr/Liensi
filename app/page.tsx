@@ -5,6 +5,7 @@ import { CatalogHeader } from "@/components/catalog/catalog-header";
 import { ProductGrid } from "@/components/catalog/product-grid";
 import { WhatsAppButton } from "@/components/catalog/whatsapp-button";
 import { getCatalogBanners, getCatalogProducts, getCategories } from "@/lib/catalog";
+import { getPublicSiteSettings } from "@/lib/settings";
 
 export const revalidate = 60;
 
@@ -32,10 +33,11 @@ export default async function Home({ searchParams }: HomeProps) {
   );
   const sort = (resolvedSearchParams.ordem ?? resolvedSearchParams.sort)?.trim() ?? "mais-recentes";
   const hasSortFilter = sort !== "mais-recentes" && sort !== "newest";
-  const [banners, categories, products] = await Promise.all([
+  const [banners, categories, products, settings] = await Promise.all([
     getCatalogBanners(),
     getCategories(),
-    getCatalogProducts(search, category, sort)
+    getCatalogProducts(search, category, sort),
+    getPublicSiteSettings()
   ]);
 
   return (
@@ -51,7 +53,7 @@ export default async function Home({ searchParams }: HomeProps) {
       />
       <CatalogViewTracker search={search} category={category} sort={sort} />
       <ProductGrid products={products} hasFilters={Boolean(search || category || hasSortFilter)} />
-      <WhatsAppButton />
+      <WhatsAppButton whatsappNumber={settings.whatsappNumber} />
     </main>
   );
 }

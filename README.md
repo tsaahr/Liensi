@@ -2,9 +2,9 @@
 
 Catalogo publico para sex shop com curadoria editorial e atendimento direto pelo WhatsApp. O cliente navega pelos produtos, filtra por categoria, busca por nome e abre uma mensagem pronta no WhatsApp. Nao ha carrinho, pagamento ou login de cliente.
 
-O projeto tambem inclui uma area admin protegida por Supabase Auth para gerenciar produtos, variantes, categorias, estoque, imagens, banners, importacao CSV e analytics do funil ate o WhatsApp.
+O projeto tambem inclui uma area admin protegida por Supabase Auth para gerenciar produtos, variantes, categorias, estoque, imagens, banners, importacao CSV, financas operacionais, configuracao de WhatsApp e analytics do funil ate o WhatsApp.
 
-O admin tambem tem uma tela inicial em `/admin` com resumo operacional: produtos ativos, esgotados, estoque baixo, promocoes, banners ativos e itens que precisam de atencao.
+O admin tambem tem uma tela inicial em `/admin` com resumo operacional: produtos ativos, esgotados, estoque baixo, promocoes, banners ativos, atalhos para financas/configuracoes e itens que precisam de atencao.
 
 A tela `/admin/analytics` mostra visitantes anonimos, cliques em produtos, visualizacoes de paginas de produto e cliques no WhatsApp.
 
@@ -31,7 +31,7 @@ npm.cmd install
 
 2. Crie um projeto no Supabase.
 
-3. Execute o SQL de `supabase.sql` no SQL editor do Supabase. O arquivo cria tabelas, indices, RLS e policies do bucket `produtos`, incluindo `product_variants`, `catalog_banners`, banners responsivos, campos de estoque profissional, `stock_movements` e `analytics_events`.
+3. Execute o SQL de `supabase.sql` no SQL editor do Supabase. O arquivo cria tabelas, indices, RLS e policies do bucket `produtos`, incluindo `product_variants`, `catalog_banners`, banners responsivos, campos de estoque profissional, `stock_movements`, `analytics_events` e `site_settings` para configuracoes publicas seguras como o numero do WhatsApp.
 
 4. O email `liensiparadise@gmail.com` ja esta autorizado como admin no `supabase.sql`. Se o usuario Auth ja existir e estiver pendente de confirmacao, o SQL confirma o email. A senha nao fica mais definida no repositorio.
 
@@ -51,10 +51,11 @@ NEXT_PUBLIC_WHATSAPP_NUMBER=5511999999999
 ```
 
 Se voce ainda estiver usando a anon key legada do Supabase, pode usar `NEXT_PUBLIC_SUPABASE_ANON_KEY` como fallback. O projeto agora bloqueia o boot/build se uma chave secreta (`sb_secret_` ou `service_role`) aparecer em qualquer `NEXT_PUBLIC_*`.
+Se voce estiver migrando de um `.env` antigo que usava `NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_secret_...`, mova essa chave para `SUPABASE_SECRET_KEY` e use a publishable key em `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 O `NEXT_PUBLIC_SITE_URL` e usado para sitemap e URLs canonicas das paginas de produto. Em desenvolvimento pode usar `http://localhost:3000`.
 
-O `NEXT_PUBLIC_WHATSAPP_NUMBER` e usado para montar links `https://wa.me/...` no botao flutuante do catalogo. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia apenas `Olá, tenho interesse no {nome do produto}`. Depois de alterar esse valor com o servidor local aberto, reinicie `npm.cmd run dev`.
+O `NEXT_PUBLIC_WHATSAPP_NUMBER` e o fallback inicial para montar links `https://wa.me/...` no botao flutuante do catalogo. Depois de aplicar `supabase.sql`, o admin pode trocar esse numero em `/admin/configuracoes` sem novo deploy. Use somente DDI + DDD + numero; se incluir espacos, parenteses ou hifen, o app limpa automaticamente. Na pagina de produto, o botao envia apenas `Ola, tenho interesse no {nome do produto}`.
 
 ## Deploy na Vercel
 
@@ -157,6 +158,21 @@ Regras:
 - O historico e privado: somente admin autenticado consegue ler/escrever `stock_movements`.
 - Custo de compra ainda nao foi adicionado porque e dado sensivel e nao deve ficar exposto junto da tabela publica de produtos sem uma separacao propria.
 
+## Financas e Configuracoes
+
+- A pagina `/admin/financas` calcula produtos cadastrados, produtos ativos, unidades em estoque e valor bruto potencial se todo o estoque ativo for vendido.
+- O calculo usa o preco atual do produto: preco promocional quando existir promocao valida, senao preco normal.
+- Produtos com variantes usam a soma das variantes ativas, do mesmo jeito que a vitrine publica.
+- A tela tambem mostra valor medio por unidade, impacto potencial de descontos e resumo por categoria.
+- Esses numeros sao operacionais: nao incluem custo de compra, lucro, frete, taxas, impostos ou venda confirmada.
+- A pagina `/admin/configuracoes` permite trocar o numero do WhatsApp do catalogo pelo admin. O valor fica em `site_settings` e o `.env` continua sendo fallback.
+
+## Categorias
+
+- A pagina `/admin/categorias` cria, edita e exclui categorias.
+- Ela tambem permite abrir uma categoria e mover varios produtos para ela de uma vez, marcando checkboxes.
+- Como cada produto pertence a uma unica categoria, a acao em massa move os produtos selecionados para a categoria escolhida.
+
 ## Analytics
 
 - O catalogo registra eventos anonimos de `catalog_view`, `product_card_click`, `product_view` e `whatsapp_click`.
@@ -227,6 +243,8 @@ npm.cmd run start
 - O header publico nao mostra link para o admin; o acesso admin fica separado em `/admin`.
 - O admin tem um atalho `Catalogo` para abrir a vitrine publica.
 - O admin tem uma aba `Banners` para editar o carrossel do topo da vitrine.
+- O admin tem uma aba `Financas` para acompanhar valor bruto potencial do estoque ativo.
+- O admin tem uma aba `Config` para trocar o WhatsApp do catalogo sem redeploy.
 - O admin tem uma aba `Analytics` para acompanhar o funil anonimo ate o WhatsApp; os ultimos eventos abrem em uma lista curta e podem ser expandidos com `Ver mais`.
 - O catalogo publico usa um botao fixo de WhatsApp no centro inferior da tela, sem fundo, exibindo apenas o icone em tamanho proporcional a viewport.
 - O favicon e os icones instalaveis usam o simbolo central recortado de `Liensi.png` para manter legibilidade em tamanhos pequenos. Ao trocar `Liensi.png`, regenere os derivados em `app/` e `public/`.

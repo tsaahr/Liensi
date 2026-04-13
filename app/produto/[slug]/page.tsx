@@ -13,6 +13,7 @@ import { getProductBySlug, getProductSlugs } from "@/lib/catalog";
 import { getProductMedia } from "@/lib/product-media";
 import { getProductStock, productUsesVariants } from "@/lib/product-stock";
 import { getProductPricing } from "@/lib/pricing";
+import { getPublicSiteSettings } from "@/lib/settings";
 import { formatProductName } from "@/lib/utils";
 
 export const revalidate = 60;
@@ -78,7 +79,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, settings] = await Promise.all([
+    getProductBySlug(slug),
+    getPublicSiteSettings()
+  ]);
 
   if (!product) {
     notFound();
@@ -153,6 +157,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             productName={displayName}
             fallbackStock={product.stock}
             variants={product.variants}
+            whatsappNumber={settings.whatsappNumber}
           />
         </div>
       </section>

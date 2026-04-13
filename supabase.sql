@@ -30,6 +30,18 @@ create table if not exists public.admin_users (
   constraint admin_users_email_not_blank check (length(trim(email::text)) > 0)
 );
 
+create table if not exists public.site_settings (
+  key text primary key,
+  value text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint site_settings_key_not_blank check (length(trim(key)) > 0),
+  constraint site_settings_value_not_blank check (length(trim(value)) > 0),
+  constraint site_settings_whatsapp_number_digits check (
+    key <> 'whatsapp_number' or value ~ '^[0-9]{10,15}$'
+  )
+);
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -269,6 +281,11 @@ create trigger admin_users_set_updated_at
 before update on public.admin_users
 for each row execute function public.set_updated_at();
 
+drop trigger if exists site_settings_set_updated_at on public.site_settings;
+create trigger site_settings_set_updated_at
+before update on public.site_settings
+for each row execute function public.set_updated_at();
+
 drop trigger if exists categories_set_updated_at on public.categories;
 create trigger categories_set_updated_at
 before update on public.categories
@@ -296,6 +313,8 @@ for each row execute function public.set_updated_at();
 
 create index if not exists admin_users_active_email_idx
   on public.admin_users(active, email);
+create index if not exists site_settings_updated_at_idx
+  on public.site_settings(updated_at desc);
 create index if not exists categories_slug_idx on public.categories(slug);
 create index if not exists products_slug_idx on public.products(slug);
 create unique index if not exists products_sku_unique_idx
@@ -347,6 +366,10 @@ on conflict (email) do update
 set active = true,
     updated_at = now();
 
+insert into public.site_settings (key, value)
+values ('whatsapp_number', '5553981169371')
+on conflict (key) do nothing;
+
 -- The account was created through Supabase Auth signup. This confirms the email
 -- when the SQL editor runs with owner privileges. If the Auth user does not
 -- exist yet, this safely updates zero rows. Password definition stays outside
@@ -357,6 +380,7 @@ set email_confirmed_at = coalesce(email_confirmed_at, now()),
 where lower(email) = lower('liensiparadise@gmail.com');
 
 alter table public.admin_users enable row level security;
+alter table public.site_settings enable row level security;
 alter table public.categories enable row level security;
 alter table public.products enable row level security;
 alter table public.product_images enable row level security;
@@ -375,6 +399,21 @@ using (public.is_admin());
 drop policy if exists "Admins can manage admin users" on public.admin_users;
 create policy "Admins can manage admin users"
 on public.admin_users
+for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Public can read public site settings" on public.site_settings;
+create policy "Public can read public site settings"
+on public.site_settings
+for select
+to anon, authenticated
+using (key in ('whatsapp_number'));
+
+drop policy if exists "Admins can manage site settings" on public.site_settings;
+create policy "Admins can manage site settings"
+on public.site_settings
 for all
 to authenticated
 using (public.is_admin())

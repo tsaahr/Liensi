@@ -8,6 +8,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { optimizeImageUpload, type OptimizedImageUpload } from "@/lib/image-processing";
 import { getProductPricing } from "@/lib/pricing";
+import { normalizeWhatsAppNumber, WHATSAPP_SETTING_KEY } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 import { formatProductName, slugify, toNumber } from "@/lib/utils";
 
@@ -15,6 +16,18 @@ const categorySchema = z.object({
   name: z.string().trim().min(2, "Informe o nome."),
   slug: z.string().trim().optional()
 });
+
+const moveProductsToCategorySchema = z.object({
+  categoryId: z.string().uuid("Categoria invalida."),
+  productIds: z.array(z.string().uuid("Produto invalido.")).min(1, "Selecione pelo menos um produto.")
+});
+
+const whatsappNumberSchema = z
+  .string()
+  .trim()
+  .transform((value) => normalizeWhatsAppNumber(value))
+  .refine((value) => value.length >= 10, "Informe DDI, DDD e numero do WhatsApp.")
+  .refine((value) => value.length <= 15, "Numero do WhatsApp muito longo.");
 
 const bannerSchema = z.object({
   title: z.string().trim().max(120, "Titulo muito longo.").optional(),
@@ -508,11 +521,14 @@ function refreshCatalog(paths: string[] = []) {
   revalidateTag("products", "max");
   revalidateTag("categories", "max");
   revalidateTag("banners", "max");
+  revalidateTag("settings", "max");
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
   revalidatePath("/admin/categorias");
   revalidatePath("/admin/banners");
+  revalidatePath("/admin/configuracoes");
+  revalidatePath("/admin/financas");
 
   for (const path of paths) {
     revalidatePath(path);
@@ -1609,4 +1625,97 @@ export async function deleteCategory(categoryId: string) {
 
   refreshCatalog();
   adminRedirect("/admin/categorias", "success", "Categoria excluida com sucesso.");
+}
+
+export async function moveProductsToCategory(categoryId: string, formData: FormData) {
+  await requireAdmin();
+
+  const productIds = Array.from(new Set(formData.getAll("product_ids").map(String)));
+  const parsed = moveProductsToCategorySchema.safeParse({
+    categoryId,
+    productIds
+  });
+
+  if (!parsed.success) {
+    adminRedirect(
+      "/admin/categorias",
+      "error",
+      parsed.error.issues[0]?.message ?? "Selecione pelo menos um produto."
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: category, error: categoryError } = await supabase
+    .from("categories")
+    .select("id,name")
+    .eq("id", parsed.data.categoryId)
+    .maybeSingle();
+
+  if (categoryError) {
+    adminRedirect(
+      "/admin/categorias",
+      "error",
+      `Nao foi possivel localizar a categoria: ${categoryError.message}`
+    );
+  }
+
+  if (!category) {
+    adminRedirect("/admin/categorias", "error", "Categoria nao encontrada.");
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .update({ category_id: parsed.data.categoryId })
+    .in("id", parsed.data.productIds)
+    .select("slug");
+
+  if (error) {
+    adminRedirect(
+      "/admin/categorias",
+      "error",
+      `Nao foi possivel mover os produtos: ${error.message}`
+    );
+  }
+
+  const updatedProducts = data ?? [];
+  refreshCatalog(updatedProducts.map((product) => `/produto/${product.slug}`));
+  adminRedirect(
+    "/admin/categorias",
+    "success",
+    `${updatedProducts.length} produto${updatedProducts.length === 1 ? "" : "s"} movido${updatedProducts.length === 1 ? "" : "s"} para ${category.name}.`
+  );
+}
+
+export async function updateWhatsAppNumber(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = whatsappNumberSchema.safeParse(String(formData.get("whatsapp_number") ?? ""));
+
+  if (!parsed.success) {
+    adminRedirect(
+      "/admin/configuracoes",
+      "error",
+      parsed.error.issues[0]?.message ?? "Numero de WhatsApp invalido."
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("site_settings").upsert(
+    {
+      key: WHATSAPP_SETTING_KEY,
+      value: parsed.data
+    },
+    { onConflict: "key" }
+  );
+
+  if (error) {
+    adminRedirect(
+      "/admin/configuracoes",
+      "error",
+      `Nao foi possivel salvar o WhatsApp. Reaplique supabase.sql e tente novamente. ${error.message}`
+    );
+  }
+
+  refreshCatalog();
+  adminRedirect("/admin/configuracoes", "success", "WhatsApp atualizado no catalogo.");
 }
