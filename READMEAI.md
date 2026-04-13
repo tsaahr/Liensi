@@ -20,7 +20,7 @@
 - Supabase preparado via `supabase.sql` com tabela `admin_users`, funcao `is_admin()`, tabelas do catalogo, tabela `product_variants`, tabela `catalog_banners` responsiva, tabela `stock_movements`, tabela `analytics_events`, indices, RLS e policies de storage para o bucket `produtos`.
 - Endurecimento de seguranca aplicado no setup Supabase/Vercel: frontend agora aceita `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (com fallback legado para `NEXT_PUBLIC_SUPABASE_ANON_KEY`), bloqueia boot/build se uma chave secreta `sb_secret_`/`service_role` for exposta em `NEXT_PUBLIC_*`, e o script `create-admin` passou a preferir `SUPABASE_SECRET_KEY`.
 - Admin ganhou `/admin/financas` com valor bruto potencial do estoque ativo, resumo por categoria e impacto de promocoes; `/admin/configuracoes` permite trocar o WhatsApp do catalogo via `site_settings`; `/admin/categorias` ganhou fluxo de mover varios produtos para uma categoria por checkbox.
-- Menu horizontal do admin ajustado para ser responsivo sem `overflow-x-auto`; os links quebram em varias linhas quando a largura fica pequena.
+- Menu horizontal do admin ajustado para ser responsivo sem `overflow-x-auto` nem `flex-wrap`: desktop fica em linha unica, tablet usa labels reduzidos/icones e mobile usa hamburger.
 - `.env` local foi corrigido nesta sessao: a chave publica do Supabase saiu de `NEXT_PUBLIC_SUPABASE_ANON_KEY` inseguro para `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, e a `sb_secret_...` foi movida para `SUPABASE_SECRET_KEY`.
 - A intencao atual do produto e: somente admin faz login; clientes apenas leem o catalogo publico e abrem WhatsApp.
 - Solicitacao de criacao do usuario Auth `liensiparadise@gmail.com` foi aceita pelo Supabase, mas o login testado retornou `Email not confirmed`; `supabase.sql` agora confirma esse usuario sem gravar senha fixa no repositorio. A senha deve ser definida no painel Auth ou via `scripts/create-admin.mjs`.
@@ -84,7 +84,7 @@
 - `app/admin/configuracoes/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area admin para trocar o WhatsApp do catalogo e atalhos/menu para a nova tela.
 - `app/admin/financas/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area financeira operacional com produtos cadastrados, unidades em estoque, valor bruto potencial se vender tudo, resumo por categoria e impacto de descontos.
 - `app/admin/categorias/page.tsx`, `lib/admin-actions.ts`: categorias ganharam formulario por categoria para mover varios produtos de uma vez usando checkboxes.
-- `components/admin/admin-shell.tsx`: nav do admin removeu rolagem horizontal e passou a usar `flex-wrap`, `min-w-0`, logo sem encolher e botao Sair estavel.
+- `components/admin/admin-shell.tsx`, `components/admin/admin-mobile-menu-toggle.tsx`: nav do admin removeu rolagem horizontal e `flex-wrap`; desktop usa uma unica linha com espacamento compacto, tablet usa labels curtos/icones e mobile usa hamburger com toggle DOM vanilla.
 
 ## [BLOQUEIOS/ERROS]
 
@@ -120,6 +120,7 @@
 - Havia rotulos publicos do catalogo com tom tecnico ou sem acentos (`Ordem`, `Catalogo`, `price-asc` na URL, `OFF`, `un.`, `Sem categoria`). Corrigido na UI e nas URLs geradas pelos filtros, sem remover suporte aos links antigos.
 - O filtro publico exibia `Todas as categorias` e tambem a categoria `Geral`, causando duplicidade. Corrigido escondendo `Geral` da lista publica e tratando `categoria=geral` como todas as categorias.
 - O seletor publico de variantes mostrava bolinha de cor baseada em `color_hex`, e o admin pedia codigo hexadecimal. Corrigido removendo a bolinha no publico e removendo o campo de cor do editor admin; a coluna segue nullable no banco apenas por compatibilidade.
+- Tentativa de validar a nav admin com Chrome/Edge headless em 320/768/1024/1440 falhou no ambiente local por erro de acesso do Crashpad antes de retornar DOM/screenshot. Validacao feita por `rg` contra `flex-wrap`/overflow horizontal no codigo, `npm.cmd run lint` e `npm.cmd run build`.
 
 ## [PROXIMOS PASSOS]
 
