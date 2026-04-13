@@ -22,11 +22,14 @@ export function AdminShell({ children }: AdminShellProps) {
   return (
     <main className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
-        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
-          <Link href="/admin/produtos" className="font-display text-2xl tracking-[0.22em]">
+        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-start md:justify-between">
+          <Link
+            href="/admin/produtos"
+            className="shrink-0 font-display text-2xl tracking-[0.22em]"
+          >
             LIENSI
           </Link>
-          <nav className="flex w-full items-center gap-2 overflow-x-auto pb-1 md:w-auto md:overflow-visible md:pb-0">
+          <nav className="flex min-w-0 w-full flex-wrap items-center gap-2 md:flex-1 md:justify-end">
             <Button variant="ghost" asChild>
               <Link href="/admin">
                 <LayoutDashboard data-icon="inline-start" />
@@ -81,7 +84,7 @@ export function AdminShell({ children }: AdminShellProps) {
                 Importar
               </Link>
             </Button>
-            <form action={logout}>
+            <form action={logout} className="shrink-0">
               <Button variant="outline" type="submit">
                 Sair
               </Button>

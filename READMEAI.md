@@ -20,11 +20,12 @@
 - Supabase preparado via `supabase.sql` com tabela `admin_users`, funcao `is_admin()`, tabelas do catalogo, tabela `product_variants`, tabela `catalog_banners` responsiva, tabela `stock_movements`, tabela `analytics_events`, indices, RLS e policies de storage para o bucket `produtos`.
 - Endurecimento de seguranca aplicado no setup Supabase/Vercel: frontend agora aceita `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (com fallback legado para `NEXT_PUBLIC_SUPABASE_ANON_KEY`), bloqueia boot/build se uma chave secreta `sb_secret_`/`service_role` for exposta em `NEXT_PUBLIC_*`, e o script `create-admin` passou a preferir `SUPABASE_SECRET_KEY`.
 - Admin ganhou `/admin/financas` com valor bruto potencial do estoque ativo, resumo por categoria e impacto de promocoes; `/admin/configuracoes` permite trocar o WhatsApp do catalogo via `site_settings`; `/admin/categorias` ganhou fluxo de mover varios produtos para uma categoria por checkbox.
+- Menu horizontal do admin ajustado para ser responsivo sem `overflow-x-auto`; os links quebram em varias linhas quando a largura fica pequena.
 - `.env` local foi corrigido nesta sessao: a chave publica do Supabase saiu de `NEXT_PUBLIC_SUPABASE_ANON_KEY` inseguro para `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, e a `sb_secret_...` foi movida para `SUPABASE_SECRET_KEY`.
 - A intencao atual do produto e: somente admin faz login; clientes apenas leem o catalogo publico e abrem WhatsApp.
 - Solicitacao de criacao do usuario Auth `liensiparadise@gmail.com` foi aceita pelo Supabase, mas o login testado retornou `Email not confirmed`; `supabase.sql` agora confirma esse usuario sem gravar senha fixa no repositorio. A senha deve ser definida no painel Auth ou via `scripts/create-admin.mjs`.
 - Validacao local apos ajustar filtros/categorias e remover cor visual das variantes: `npm.cmd run lint` e `npm.cmd run build` passaram.
-- Validacao desta sessao: `npm.cmd run lint` e `npm.cmd run build` passaram com as novas telas de financas/configuracoes, WhatsApp via `site_settings` e organizacao em massa de categorias.
+- Validacao desta sessao: `npm.cmd run lint` e `npm.cmd run build` passaram com as novas telas de financas/configuracoes, WhatsApp via `site_settings`, organizacao em massa de categorias e nav admin responsiva.
 - Apos troca manual do `Liensi.png`, os icones derivados foram regenerados novamente.
 
 ## [LOG DE ALTERACOES]
@@ -83,6 +84,7 @@
 - `app/admin/configuracoes/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area admin para trocar o WhatsApp do catalogo e atalhos/menu para a nova tela.
 - `app/admin/financas/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area financeira operacional com produtos cadastrados, unidades em estoque, valor bruto potencial se vender tudo, resumo por categoria e impacto de descontos.
 - `app/admin/categorias/page.tsx`, `lib/admin-actions.ts`: categorias ganharam formulario por categoria para mover varios produtos de uma vez usando checkboxes.
+- `components/admin/admin-shell.tsx`: nav do admin removeu rolagem horizontal e passou a usar `flex-wrap`, `min-w-0`, logo sem encolher e botao Sair estavel.
 
 ## [BLOQUEIOS/ERROS]
 

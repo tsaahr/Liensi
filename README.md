@@ -246,6 +246,7 @@ npm.cmd run start
 - O admin tem uma aba `Financas` para acompanhar valor bruto potencial do estoque ativo.
 - O admin tem uma aba `Config` para trocar o WhatsApp do catalogo sem redeploy.
 - O admin tem uma aba `Analytics` para acompanhar o funil anonimo ate o WhatsApp; os ultimos eventos abrem em uma lista curta e podem ser expandidos com `Ver mais`.
+- O menu do admin quebra em varias linhas quando necessario, sem criar rolagem horizontal em telas menores.
 - O catalogo publico usa um botao fixo de WhatsApp no centro inferior da tela, sem fundo, exibindo apenas o icone em tamanho proporcional a viewport.
 - O favicon e os icones instalaveis usam o simbolo central recortado de `Liensi.png` para manter legibilidade em tamanhos pequenos. Ao trocar `Liensi.png`, regenere os derivados em `app/` e `public/`.
 - Nao ha cadastro publico no app.
