@@ -523,6 +523,7 @@ function refreshCatalog(paths: string[] = []) {
   revalidateTag("banners", "max");
   revalidateTag("settings", "max");
   revalidatePath("/");
+  revalidatePath("/produto/[slug]", "page");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
   revalidatePath("/admin/categorias");

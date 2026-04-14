@@ -166,6 +166,7 @@ Regras:
 - A tela tambem mostra valor medio por unidade, impacto potencial de descontos e resumo por categoria.
 - Esses numeros sao operacionais: nao incluem custo de compra, lucro, frete, taxas, impostos ou venda confirmada.
 - A pagina `/admin/configuracoes` permite trocar o numero do WhatsApp do catalogo pelo admin. O valor fica em `site_settings` e o `.env` continua sendo fallback.
+- Ao salvar o WhatsApp no admin, a home e as paginas `/produto/[slug]` sao revalidadas para o novo numero chegar tambem nos botoes das paginas de produto.
 
 ## Categorias
 

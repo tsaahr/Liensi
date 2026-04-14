@@ -25,7 +25,7 @@
 - A intencao atual do produto e: somente admin faz login; clientes apenas leem o catalogo publico e abrem WhatsApp.
 - Solicitacao de criacao do usuario Auth `liensiparadise@gmail.com` foi aceita pelo Supabase, mas o login testado retornou `Email not confirmed`; `supabase.sql` agora confirma esse usuario sem gravar senha fixa no repositorio. A senha deve ser definida no painel Auth ou via `scripts/create-admin.mjs`.
 - Validacao local apos ajustar filtros/categorias e remover cor visual das variantes: `npm.cmd run lint` e `npm.cmd run build` passaram.
-- Validacao desta sessao: `npm.cmd run lint` e `npm.cmd run build` passaram com as novas telas de financas/configuracoes, WhatsApp via `site_settings`, organizacao em massa de categorias e nav admin responsiva.
+- Validacao desta sessao: `npm.cmd run lint` e `npm.cmd run build` passaram com as novas telas de financas/configuracoes, WhatsApp via `site_settings`, organizacao em massa de categorias, nav admin responsiva e revalidacao de paginas de produto ao trocar WhatsApp.
 - Apos troca manual do `Liensi.png`, os icones derivados foram regenerados novamente.
 
 ## [LOG DE ALTERACOES]
@@ -81,6 +81,7 @@
 - `README.md`, `READMEAI.md`, `.env.example`: instrucoes de setup/deploy atualizadas para Vercel, chave publishable no frontend e segredo de backend fora do frontend.
 - `.env`: atualizado para usar `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no frontend e `SUPABASE_SECRET_KEY` no backend local.
 - `supabase.sql`, `lib/settings.ts`, `lib/whatsapp.ts`, `lib/admin-data.ts`, `lib/admin-actions.ts`, `components/catalog/whatsapp-button.tsx`, `components/catalog/product-variant-picker.tsx`, `app/page.tsx`, `app/produto/[slug]/page.tsx`: numero do WhatsApp passou a ser configuravel por `site_settings`, com fallback seguro no `.env` e revalidacao do catalogo apos salvar.
+- `lib/admin-actions.ts`: `refreshCatalog()` agora tambem chama `revalidatePath("/produto/[slug]", "page")`, garantindo que o WhatsApp salvo no admin chegue nas paginas individuais de produto, nao so na home.
 - `app/admin/configuracoes/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area admin para trocar o WhatsApp do catalogo e atalhos/menu para a nova tela.
 - `app/admin/financas/page.tsx`, `components/admin/admin-shell.tsx`, `app/admin/page.tsx`: adicionada area financeira operacional com produtos cadastrados, unidades em estoque, valor bruto potencial se vender tudo, resumo por categoria e impacto de descontos.
 - `app/admin/categorias/page.tsx`, `lib/admin-actions.ts`: categorias ganharam formulario por categoria para mover varios produtos de uma vez usando checkboxes.
